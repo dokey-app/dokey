@@ -1,0 +1,8 @@
+DoKey
+Copyright 2026 The DoKey Authors
+
+This product includes software developed by The DoKey Authors,
+licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party components are listed with their own licences in the SBOM
+published with each release (syft, see .github/workflows/release.yml).

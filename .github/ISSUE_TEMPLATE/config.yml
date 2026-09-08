@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Уязвимость
+    url: https://github.com/dokey/dokey/security/advisories/new
+    about: Приватное сообщение об уязвимости — не публичный issue.

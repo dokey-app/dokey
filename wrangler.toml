@@ -1,0 +1,18 @@
+# ADR-10: Cloudflare Workers со статическими ассетами. Серверного рантайма у продукта нет —
+# Worker здесь только раздаёт собранный каталог (ADR-13).
+name = "dokey"
+compatibility_date = "2026-09-01"
+
+# Телеметрия wrangler выключена явно. Для продукта, чьё обещание — ноль исходящих запросов,
+# инструмент сборки, отправляющий метрики наружу, — плохая шутка (ИНВ-01).
+send_metrics = false
+
+[assets]
+directory = "./dist"
+# Заголовки ответа приходят из dist/_headers, который кладёт туда `pnpm build`
+# из единственного источника infra/headers/_headers (ST-03).
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
+
+[observability]
+enabled = false

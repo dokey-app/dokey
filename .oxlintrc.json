@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "warn"
+  },
+  "env": {
+    "browser": true,
+    "es2024": true
+  },
+  "rules": {
+    "no-console": "error",
+    "eqeqeq": "error",
+    "no-var": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/consistent-type-imports": "error"
+  },
+  "ignorePatterns": [
+    "dist/**",
+    "node_modules/**",
+    ".astro/**",
+    "docs/**",
+    "claude-flow-v2/**",
+    "templates/**"
+  ],
+  "overrides": [
+    {
+      "files": ["scripts/**/*.ts", "tests/**/*.ts", "*.config.ts"],
+      "env": {
+        "node": true
+      },
+      "rules": {
+        "no-console": "off",
+        "no-await-in-loop": "off"
+      }
+    }
+  ]
+}

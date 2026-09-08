@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Страница инструмента" description="Рабочий стол ToolBox: шапка портала, хлебные крошки, ввод слева, результат справа" -->
+<helmet><script src="./ds-base.js"></script><script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.js"></script><style>body{margin:0;background:var(--surface-page);font-family:var(--font-sans)}</style></helmet>
+<div style="min-height:100vh;background:var(--surface-page);color:var(--text-body)">
+<header style="position:sticky;top:0;z-index:20;height:56px;display:flex;align-items:center;gap:16px;padding:0 24px;background:var(--surface-card);border-bottom:1px solid var(--border-subtle)">
+<span style="display:inline-flex;align-items:center;gap:8px"><span style="width:26px;height:26px;border-radius:8px;background:var(--accent-500);color:#fff;font-weight:800;font-size:14px;display:inline-flex;align-items:center;justify-content:center">T</span><span style="font-weight:800;font-size:17px;letter-spacing:-0.03em;color:var(--text-strong)">Tool<span style="color:var(--accent-500)">Box</span></span></span>
+<span style="margin-left:auto;font:var(--type-caption);color:var(--text-muted)">Всё считается в браузере</span>
+</header>
+<main style="max-width:1240px;margin:0 auto;padding:32px 24px 64px;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;align-items:center;gap:8px;font:var(--type-ui);font-size:12px;color:var(--text-muted)"><span>Инструменты</span><span style="color:var(--text-subtle)">/</span><span>Кодирование</span><span style="color:var(--text-subtle)">/</span><span style="color:var(--text-strong)">Название инструмента</span></div>
+<div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
+<div style="flex:1;min-width:280px">
+<h1 style="margin:0;font-weight:700;font-size:32px;line-height:1.15;letter-spacing:-0.02em;color:var(--text-strong)">Название инструмента</h1>
+<p style="margin:6px 0 0;font-size:15px;line-height:1.65;color:var(--text-muted)">Одна строка о том, что делает инструмент и почему это безопасно.</p>
+</div>
+<div style="display:flex;gap:8px">
+<x-import component-from-global-scope="ToolBoxDesignSystem_88556c.Button" variant="ghost" size="sm" hint-size="90px,28px">Пример</x-import>
+<x-import component-from-global-scope="ToolBoxDesignSystem_88556c.Button" variant="secondary" size="sm" hint-size="110px,28px">Поделиться</x-import>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+<x-import component-from-global-scope="ToolBoxDesignSystem_88556c.Card" padding="16px" hint-size="100%,320px">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px"><span style="font:var(--type-ui);color:var(--text-strong)">Ввод</span><x-import component-from-global-scope="ToolBoxDesignSystem_88556c.Badge" mono="{{ true }}" hint-size="60px,22px">0 симв.</x-import></div>
+<x-import component-from-global-scope="ToolBoxDesignSystem_88556c.Textarea" rows="{{ 9 }}" placeholder="Вставьте данные…" hint-size="100%,200px"></x-import>
+</x-import>
+<x-import component-from-global-scope="ToolBoxDesignSystem_88556c.Card" padding="16px" hint-size="100%,320px">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px"><span style="font:var(--type-ui);color:var(--text-strong)">Результат</span><x-import component-from-global-scope="ToolBoxDesignSystem_88556c.CopyButton" value="{{ result }}" hint-size="120px,28px"></x-import></div>
+<x-import component-from-global-scope="ToolBoxDesignSystem_88556c.CodePane" code="{{ result }}" lineNumbers="{{ true }}" height="248px" hint-size="100%,248px"></x-import>
+</x-import>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;result&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;{\n  \&quot;status\&quot;: \&quot;ok\&quot;,\n  \&quot;value\&quot;: 42\n}&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { result: this.props.result ?? '{\n  "status": "ok",\n  "value": 42\n}' };
+  }
+}
+</script>
+</body>
+</html>

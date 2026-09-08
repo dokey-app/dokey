@@ -1,0 +1,51 @@
+name: Дефект
+description: Что-то работает не так, как написано
+labels: ['дефект']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Не присылайте сюда настоящие данные.** Если дефект воспроизводится только на вашем
+        вводе — опишите его форму, а не содержимое. Уязвимости идут не в issue, а по
+        [SECURITY.md](../blob/main/SECURITY.md).
+
+  - type: input
+    id: route
+    attributes:
+      label: Маршрут
+      placeholder: /jwt-inspector
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Что сделали
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: input
+    id: expected
+    attributes:
+      label: Что ожидали
+    validations:
+      required: true
+
+  - type: input
+    id: actual
+    attributes:
+      label: Что получили
+    validations:
+      required: true
+
+  - type: input
+    id: env
+    attributes:
+      label: Браузер и версия
+      placeholder: Firefox 148, Windows 11
+    validations:
+      required: true

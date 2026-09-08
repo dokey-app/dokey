@@ -1,0 +1,16 @@
+.git
+.github
+node_modules
+dist
+.astro
+docs
+claude-flow-v2
+templates
+tests
+test-results
+playwright-report
+.lighthouseci
+.wrangler
+*.log
+.env
+.env.*

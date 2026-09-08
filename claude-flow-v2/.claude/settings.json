@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Edit(./docs/openapi.yaml)",
+      "Write(./docs/openapi.yaml)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "sh scripts/session-context.sh" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'TODO: replace with your linter, e.g.: npx eslint --fix \"$CLAUDE_FILE_PATHS\"'"
+          }
+        ]
+      }
+    ]
+  }
+}

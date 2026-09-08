@@ -1,0 +1,571 @@
+openapi: 3.1.0
+
+info:
+  title: DoKey — поверхность поставки и телеметрии
+  version: 0.1.0-draft
+  summary: Контракт статической поставки и единственной мутации продукта без сервера.
+  description: |
+    Машиночитаемая форма [api-spec.md](api-spec.md). Документ выведен из спецификации строго и
+    не содержит ничего, чего в ней нет.
+
+    **Это не прикладной API продукта — его не существует** (api-spec §0.1). Серверного рантайма
+    продукта нет (ADR-13), базы данных нет (data-model §0, NFR-10), аутентификации нет ни в одном
+    виде (ADR-12, D-05). Описана поверхность поставки маршрутов и ассетов (ИНТ-01), телеметрия
+    через свой origin (ИНТ-02) и ничего сверх этого.
+
+    **Единственная мутация во всём продукте — `POST /s/event`.** Методов, кроме `GET`, `HEAD` и
+    этого одного `POST`, в контракте нет: изменять на сервере нечего (api-spec §1.5 п. 4).
+
+    **Чего в документе нет намеренно:**
+
+    - `ЭП-10` и `ЭП-11` (GHCR, `/v2/{owner}/dokey/manifests|blobs/...`) — чужая поверхность,
+      её контракт задаёт OCI Distribution, а не мы (api-spec §4.9). Описание её здесь означало бы
+      присвоение чужого контракта и потребовало бы схем, которых в спецификации нет.
+    - Эндпоинтов над `ENT-12`…`ENT-16` (`Input`, `Result`, `Token`, `SigningKey`, `InputStats`) —
+      они нарушали бы ИНВ-01 и ИНВ-02 одновременно (api-spec §6).
+    - Схем аутентификации: `securitySchemes` отсутствует целиком, статусов `401` и `403` нет.
+
+    **`ЭП-01` и `ЭП-02` сведены в одну операцию** над `/{routePath}`: это один ресурс `Route` с
+    двумя типами владельца (`Tool | StaticPage`), ровно как определяет D-82 п. 1 (api-spec §4.0).
+  contact:
+    name: ROLE-03 · мейнтейнер
+  x-source-spec: api-spec.md
+  x-status: черновик к согласованию
+
+servers:
+  - url: https://dokey.app
+    description: |
+      Прод. Профиль сборки `public`: телеметрия (`/s/script.js`, `/s/event`) присутствует.
+      HTTP невозможен по построению — зона `.app` целиком в HSTS-preload (ИНТ-09).
+  - url: "{scheme}://{host}"
+    description: |
+      Образ во внутренней сети организации (ENT-27, ИНТ-05). Профиль сборки `selfhosted`:
+      телеметрии в артефакте **физически нет** (ИНВ-11), `/s/script.js` и `/s/event` отвечают
+      как несуществующий маршрут. `http` здесь штатен и имеет последствие — ERR-07 (Q-151).
+    variables:
+      scheme:
+        default: https
+        enum: [https, http]
+        description: Внутренний контур обычно стоит на `http` (ИНТ-08, Q-151).
+      host:
+        default: localhost
+        description: Внутренний хост, назначается ROLE-02; одному внутреннему URL на команду.
+
+# Аутентификации нет ни в одном виде: ни аккаунтов, ни OAuth, ни анонимных идентификаторов
+# (ADR-12, D-05, api-spec §2.1). Пустой список — это явное объявление «ни одна операция не
+# требует аутентификации», а не незаполненное поле: `securitySchemes` отсутствует целиком,
+# заголовков `Authorization` и `Cookie` нет, статусов 401 и 403 нет в закрытом списке §3.3.
+security: []
+
+tags:
+  - name: delivery
+    description: Поставка маршрутов и ассетов (ИНТ-01). Профили — оба.
+  - name: telemetry
+    description: Телеметрия через свой origin (ИНТ-02). Профиль — только `public`.
+
+paths:
+
+  /{routePath}:
+    get:
+      tags: [delivery]
+      operationId: getRoute
+      summary: Маршрут инструмента или служебной страницы
+      description: |
+        **ЭП-01 и ЭП-02** (api-spec §4.1, §4.2) · сущности `ENT-05 Route`, `ENT-01 Tool`,
+        `ENT-06 ToolLanding`, `ENT-07 StaticPage` · адресат **ROLE-01**, для служебных страниц
+        также **ROLE-02** и **ROLE-05**.
+
+        Отдаёт единую форму инструмента (SCR-03) — лендинг и рабочее поле **на одном маршруте** —
+        либо одну из четырёх служебных страниц. Владелец маршрута ровно один и является либо
+        `Tool`, либо `StaticPage`: служебная страница — второй тип записи того же реестра
+        (D-82 п. 1), её маршрут, sitemap и `hreflang` работают по общим правилам.
+
+        HTML читаем **до выполнения JS**: отрендерен на сборке (REQ-CORE-02, ИНВ-08).
+
+        **Query-параметров нет ни одного.** 0 байт пользовательского ввода в URL, query, фрагменте
+        и истории (ИНВ-02, NFR-10): параметр вида `?input=` — нарушение гейта, а не отсутствующая
+        функция.
+
+        **ERR-02 `tool_withdrawn`.** Если `Route.contentStatus = withdrawn`, маршрут остаётся
+        пожизненно и отдаёт объяснение «инструмент выведен из каталога» с входом в палитру;
+        **редиректа нет**, запись убрана из sitemap (D-82 п. 3). HTTP-статус этого ответа
+        **не выбран — Q-160**, поэтому отдельным кодом ответа здесь не объявлен.
+      x-dokey-endpoint: [ЭП-01, ЭП-02]
+      x-dokey-role: [ROLE-01, ROLE-02, ROLE-05]
+      x-dokey-profile: [public, selfhosted]
+      parameters:
+        - name: routePath
+          in: path
+          required: true
+          description: |
+            `Route.path`. Для инструмента совпадает с `Tool.id` — ASCII kebab-case, уникален,
+            **неизменен после релиза навсегда** (ИНВ-07, D-82 п. 2). Для служебной страницы —
+            `StaticPage.id`. Маршрут пожизненен (D-82 п. 3).
+
+            Каталог P0a — шесть инструментов (JSON Workbench, JWT Inspector, Base64
+            Encoder/Decoder, URL Encoder/Decoder, Unix Timestamp Converter, UUID/ULID Generator)
+            и четыре служебные страницы («Как это проверить», «Держать под рукой», бенчмарк TTR,
+            «Развёртывание в своей сети»).
+
+            **Конкретные slug ни одним документом проекта не закреплены — Q-162**, поэтому
+            перечисления значений здесь нет.
+          schema:
+            type: string
+            pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+      responses:
+        "200":
+          description: |
+            Маршрут наполнен: HTML лендинга и поля ввода. Голова несёт `ToolLanding.title` и
+            `description` (уникальные по всей сборке), `h1` с поисковым именем кластера (D-56),
+            `canonical`, набор `hreflang`, ссылки на манифест и OpenSearch-описание. Тело —
+            поле ввода, синтетический пример `Tool.example` и 3–5 `FaqItem`.
+
+            Этим же статусом **может** отдаваться ERR-02 (выведенная позиция) — выбор не сделан,
+            Q-160.
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: |
+            **ERR-01 `route_not_found`** — маршрута нет в реестре сборки. Тело: страница с
+            текстом «Такого инструмента нет.» и действием «Открыть палитру» (US-002 крит. 4,
+            D-63). Молчаливого отказа не существует (ИНВ-08, REQ-LIMIT-04).
+          content:
+            text/html:
+              schema:
+                type: string
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /sitemap.xml:
+    get:
+      tags: [delivery]
+      operationId: getSitemap
+      summary: Sitemap, развёрнутый из реестра
+      description: |
+        **ЭП-03** (api-spec §4.3) · сущность `ENT-03 ToolRegistry` (производная) · адресат
+        **ROLE-01** через канал D-07.
+
+        Реестр — единственный источник маршрутов, sitemap и `hreflang` (ИНВ-06): расхождение
+        sitemap и реестра — 0, гейт CI (US-002 крит. 2).
+
+        **Что в документе отсутствует и проверяется гейтом:** маршруты в статусе `draft`
+        (ветка не наполнена) и `withdrawn` (позиция выведена). Вторые убраны из sitemap, но
+        **продолжают отвечать** по `getRoute` — это разные обязательства: перед краулером и
+        перед сохранённым ярлыком.
+
+        Параметров не принимает: коллекций по HTTP не существует (api-spec §1.3).
+
+        **Нужен ли документ в профиле `selfhosted` — Q-161:** во внутреннем контуре краулера нет.
+      x-dokey-endpoint: [ЭП-03]
+      x-dokey-role: [ROLE-01]
+      x-dokey-profile: [public, selfhosted]
+      responses:
+        "200":
+          description: Множество наполненных маршрутов с альтернативами `hreflang`.
+          content:
+            application/xml:
+              schema:
+                type: string
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /manifest.webmanifest:
+    get:
+      tags: [delivery]
+      operationId: getWebAppManifest
+      summary: Манифест PWA
+      description: |
+        **ЭП-04** (api-spec §4.4) · сущность `ENT-08 EntryPoint` · адресат **ROLE-01**.
+
+        Данные для установки (ИНТ-08, FL-14). Модель полей манифесту не назначает: **ни одно
+        требование, кроме `start_url` со статическим маркером, его содержимого не касается**
+        (data-model §2.6, REQ-ENTRY-02).
+
+        Отказ установки — не наш отказ: политика организации или незащищённый контекст (ИНТ-08);
+        объясняется страницей «Держать под рукой».
+      x-dokey-endpoint: [ЭП-04]
+      x-dokey-role: [ROLE-01]
+      x-dokey-profile: [public, selfhosted]
+      responses:
+        "200":
+          description: Манифест приложения.
+          content:
+            application/manifest+json:
+              schema:
+                $ref: "#/components/schemas/WebAppManifest"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /opensearch.xml:
+    get:
+      tags: [delivery]
+      operationId: getOpenSearchDescription
+      summary: Описание поискового ярлыка адресной строки
+      description: |
+        **ЭП-05** (api-spec §4.5) · сущность `ENT-10 SearchShortcut` · адресат **ROLE-01**.
+
+        Описание ярлыка адресной строки (REQ-ENTRY-03, FL-15): `shortName` — `dk`.
+
+        **Главный инвариант — то, чего в шаблоне нет.** `template` является статическим URL
+        **без подставляемого `{searchTerms}`** (D-13 п. 2, data-model §2.6): иначе набранное в
+        адресной строке уходит в историю браузера **до** того, как наш код получит управление, —
+        секрет утекает мимо всех гейтов. Появление `{searchTerms}` в этом файле — нарушение
+        ИНВ-02, а не улучшение UX.
+
+        Если человек наберёт `dk` и следом токен (D-70): хвост не читается и не хранится, URL
+        очищается до первой отрисовки, о независимости истории браузера предупреждают заранее.
+      x-dokey-endpoint: [ЭП-05]
+      x-dokey-role: [ROLE-01]
+      x-dokey-profile: [public, selfhosted]
+      responses:
+        "200":
+          description: OpenSearch-описание со статическим шаблоном.
+          content:
+            application/opensearchdescription+xml:
+              schema:
+                type: string
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /assets/{assetFile}:
+    get:
+      tags: [delivery]
+      operationId: getAsset
+      summary: Хешированный ассет сборки
+      description: |
+        **ЭП-06** (api-spec §4.6) · контур `К-1 → К-3` · адресат **ROLE-01** через КМП-12.
+
+        Чанк инструмента, чанк редактора, шрифт или спрайт. `Cache-Control` — длинный TTL и
+        `immutable`: инвалидация сменой хеша в имени файла, а не временем.
+
+        **Бюджеты, проверяемые гейтом size-limit на каждой сборке:** initial JS ≤ 40 KB gzip,
+        чанк ≤ 90 KB, шрифты ≤ 48 KB, precache ≤ 120 KB (NFR-03, NFR-18).
+      x-dokey-endpoint: [ЭП-06]
+      x-dokey-role: [ROLE-01]
+      x-dokey-profile: [public, selfhosted]
+      parameters:
+        - name: assetFile
+          in: path
+          required: true
+          description: Имя файла вида `{name}.{hash}.{ext}` — хеш сборки в имени.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Файл ассета; `Content-Type` — по расширению.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: |
+            **ERR-06 `asset_gone`** — файл сборки старше **30 дней** (ИНВ-10, D-67 п. 1).
+            ROLE-01 видит SCR-15 «Инструмент недоступен» с названной причиной и входом в палитру.
+
+            Тридцатидневная жизнь файлов прошлых сборок — основной механизм защиты от «залипшего»
+            кеша, а не `skipWaiting`: он задаётся правилом деплоя, а не кодом.
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /sw.js:
+    get:
+      tags: [delivery]
+      operationId: getServiceWorker
+      summary: Service worker
+      description: |
+        **ЭП-07** (api-spec §4.6) · компонент КМП-12 · адресат **ROLE-01** через браузер.
+
+        Precache оболочки, ядра и **всех** чанков каталога фоном после первой отрисовки; чанк
+        редактора — только runtime-кеш (D-63): 90 KB не оплачиваются теми, кто не открывает
+        JSON Workbench.
+
+        `Cache-Control` короткий: файл проверяется при каждом запуске оболочки и раз в 6 часов.
+        Обновление — `skipWaiting` **только по действию человека** (ИНВ-10, D-67).
+
+        **ERR-07 `insecure_context`** HTTP-статуса не имеет и кодом ответа здесь не объявлен: в
+        незащищённом контексте регистрация service worker невозможна вовсе. Приложение работает,
+        офлайн-обещание не выполняется — **Q-151**.
+      x-dokey-endpoint: [ЭП-07]
+      x-dokey-role: [ROLE-01]
+      x-dokey-profile: [public, selfhosted]
+      responses:
+        "200":
+          description: Код service worker.
+          content:
+            text/javascript:
+              schema:
+                type: string
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /s/script.js:
+    get:
+      tags: [telemetry]
+      operationId: getTelemetryScript
+      summary: Клиент приёмника со своего origin
+      description: |
+        **ЭП-08** (api-spec §4.7) · сущность `ENT-28 AnalyticsEvent` (доставка клиента) ·
+        адресат **ROLE-01** неявно · профиль **только `public`**.
+
+        Worker переписывает путь на VPS с Umami и отдаёт ответ как свой. Прямое обращение к VPS
+        потребовало бы исключения в `connect-src` и сделало бы счётчик внешних запросов ненулевым —
+        страница опровергала бы собственное обещание собственной вёрсткой (D-22).
+
+        **Целевой путь приёмника ни одним документом не закреплён — Q-159.**
+
+        В профиле `selfhosted` эндпоинта **не существует** — не отключён, отсутствует в артефакте
+        (ИНВ-11, ENT-26); запрос обслуживается как ERR-01 (Q-169).
+      x-dokey-endpoint: [ЭП-08]
+      x-dokey-role: [ROLE-01]
+      x-dokey-profile: [public]
+      responses:
+        "200":
+          description: Скрипт приёмника, отданный как свой ресурс.
+          content:
+            text/javascript:
+              schema:
+                type: string
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "429":
+          $ref: "#/components/responses/WorkerLimitExceeded"
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
+        "504":
+          $ref: "#/components/responses/UpstreamUnavailable"
+
+  /s/event:
+    post:
+      tags: [telemetry]
+      operationId: sendAnalyticsEvent
+      summary: Событие аналитики — единственная мутация продукта
+      description: |
+        **ЭП-09** (api-spec §4.8) · сущности `ENT-28 AnalyticsEvent`, `ENT-29 FieldAllowlist` ·
+        потребитель **ROLE-03** · профиль **только `public`**.
+
+        Единственная точка, где что-либо покидает границу доверия, и единственный `POST` во всём
+        контракте.
+
+        **Предусловия отправки — все три обязательны** (REQ-METR-05, REQ-METR-07, D-22 п. 5):
+        онлайн; `navigator.doNotTrack` отсутствует; Global Privacy Control отсутствует. При
+        невыполнении любого запрос **не делается**, и событие **не копится**: ни очереди, ни
+        счётчиков на устройстве (D-44).
+
+        **Транспорт: таймаут ≤ 1 с, 0 повторов, at-most-once.** Ключ идемпотентности **запрещён**,
+        а не отсутствует: он требует персистентного идентификатора запроса, а `userId`,
+        `sessionId`, `visitorId` — анти-поля (data-model §2.7, D-41). Дубликаты по построению
+        ожидаемы: каждый шаг петли FL-07 даёт отдельное событие.
+
+        **Клиент ответ не читает вовсе** — ни статус, ни тело: NFR-11 требует 0 видимых ошибок и
+        0 мс прироста TTR. Статусы ниже существуют для диагностики ROLE-03 (architecture §8.3);
+        предположение о том, что прокси формирует своё тело ответа, — **Q-167**.
+
+        **`Content-Type` тела не выбран — Q-168.**
+      x-dokey-endpoint: [ЭП-09]
+      x-dokey-role: [ROLE-03]
+      x-dokey-profile: [public]
+      requestBody:
+        required: true
+        description: Запись закрытого списка полей и ничего сверх него.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsEvent"
+      responses:
+        "204":
+          description: |
+            Событие доставлено. Тела нет; клиент этот статус не читает (NFR-11).
+        "400":
+          description: |
+            **ERR-08 `field_not_allowed`** — в теле поле вне закрытого списка ENT-29 (ИНВ-05,
+            REQ-METR-04). ROLE-01 не видит **ничего**.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "429":
+          $ref: "#/components/responses/WorkerLimitExceeded"
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
+        "504":
+          $ref: "#/components/responses/UpstreamUnavailable"
+
+components:
+
+  responses:
+
+    MethodNotAllowed:
+      description: |
+        **ERR-03 `method_not_allowed`** — метод вне `GET`, `HEAD` (и `POST` для `/s/event`).
+        `PUT`, `PATCH` и `DELETE` не используются нигде: изменять на сервере нечего
+        (api-spec §1.5 п. 4). Тело пустое; в приложении такой запрос не возникает.
+
+    WorkerLimitExceeded:
+      description: |
+        **ERR-04 `worker_limit_exceeded`** — исчерпан суточный лимит Worker (100 000 запросов в
+        сутки, ИНТ-02). ROLE-01 видит **ничего** (NFR-11).
+
+        Поведение при исчерпании — *fail open* (обход Worker) или *fail closed* (страница
+        ошибки) — **не выбрано: Q-157**. Заголовок `Retry-After` клиенту не адресован (ретраев 0),
+        но нужен синтетической проверке — **Q-170**, поэтому здесь не объявлен.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    UpstreamUnavailable:
+      description: |
+        **ERR-05 `upstream_unavailable`** — VPS с Umami недоступен (ИНТ-03). ROLE-01 видит
+        **ничего**: отказ аналитики не влияет ни на один пользовательский поток (NFR-11).
+        Мейнтейнер узнаёт об этом не от продукта — Q-156.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+
+    Error:
+      type: object
+      title: Единый конверт ошибки
+      description: |
+        api-spec §3.2. Конверт **один на весь проект**; норма: любой эндпоинт, отдающий
+        `application/json`, отдаёт ошибку этим конвертом и ничем другим.
+
+        Сегодня применяется только на JSON-ответах прокси (ERR-04, ERR-05, ERR-08): поверхность
+        поставки отдаёт документы, и её отказы — HTML-страницы или статус без тела.
+      required: [error]
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          additionalProperties: false
+          properties:
+            code:
+              description: |
+                Закрытый список api-spec §3.3. Стабилен как `ContractClause.id` (D-21): по нему
+                формулируется отказ, смена обесценивает уже выданные ответы.
+
+                Статусов `401` и `403` в списке нет и не появится: они предполагают субъект,
+                которого не существует (ADR-12, D-05). `500` нет тоже.
+              type: string
+              enum:
+                - route_not_found
+                - tool_withdrawn
+                - method_not_allowed
+                - worker_limit_exceeded
+                - upstream_unavailable
+                - asset_gone
+                - insecure_context
+                - field_not_allowed
+            message:
+              type: string
+              description: |
+                **Сообщение для разработчика, а не для пользователя**, английский. Тексты для
+                ROLE-01 принадлежат content-guide и в API не живут: второй источник формулировок
+                недопустим (data-model §2.7, анти-поле `SizeThreshold.message`).
+              examples:
+                - "Daily Worker request limit reached; event dropped."
+            details:
+              type: object
+              additionalProperties: true
+              description: |
+                **Никогда не несёт содержимого ввода, результата, токена, ключа, их фрагментов и
+                длин** (ИНВ-01, REQ-TRUST-06). Гейт закрытого списка полей распространяется и сюда.
+              examples:
+                - { endpoint: "/s/event", limit: 100000 }
+
+    AnalyticsEvent:
+      type: object
+      title: Исходящая запись аналитики
+      description: |
+        `ENT-28` под ограничением `ENT-29`. Моделируется **не таблица, а исходящая запись** — то,
+        что покидает браузер (data-model §2.4).
+
+        **`additionalProperties: false` — это и есть закрытый список.** Расширение идёт
+        **публикация → список → код**, а не наоборот (ИНВ-05, data-model §7.3), и список не растёт
+        ради измерения собственных слепых пятен — прямо запрещённая мотивация (D-44).
+
+        **Свойств здесь восемь, а закрытый список назван семью — Q-171.** PRD §6 перечисляет семь
+        без `name`; data-model §2.4 и architecture §1 перечисляют восемь под подписью «семь полей».
+        До ответа схема описывает фактический состав тела запроса, а не мощность списка.
+
+        **Чего в записи нет никогда:** содержимого ввода и результата, ключа, токена, их фрагментов
+        и длин, по которым содержимое восстановимо (REQ-TRUST-06); идентификатора человека в любом
+        виде — `userId`, `sessionId`, `visitorId` (data-model §2.7); `connectionType` (D-40).
+      required: [name, url, screenResolution, browser]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: |
+            Три события P0a: результат получен (REQ-METR-01), результат не получен (REQ-METR-02),
+            ручное переключение чипса типа (REQ-METR-03). **Форму имени задаёт analytics-spec**,
+            корень глагола — глоссарий §3; документа ещё нет — **Q-166**.
+        url:
+          type: string
+          description: |
+            Несёт `launchMarker` — **статическую константу**, не производную от ввода (D-41 п. 3).
+            Маркер приезжает внутри уже разрешённого поля, поэтому закрытый список от него не
+            растёт вовсе; на этом стоят PM-06 и PM-07.
+        referrer:
+          type: string
+          description: Пустой реферер — признак прямого визита (PM-05).
+        screenResolution:
+          type: string
+          description: Закрытый список ENT-29.
+        browser:
+          type: string
+          description: Закрытый список ENT-29.
+        ttr:
+          type: integer
+          description: |
+            Миллисекунды. **Одно несегментированное число:** тип соединения и любые сегменты не
+            добавляются (REQ-METR-06, D-40). Не дата — единственная временна́я отметка модели
+            (`builtAt`, ISO 8601) в событие не входит.
+        toolId:
+          type: string
+          description: |
+            `Tool.id` — ASCII kebab-case, совпадает с сегментом RU-маршрута и **не меняется после
+            релиза никогда** (D-82 п. 2, ИНВ-07). Событие открытия инструмента несёт только его и
+            новых полей не добавляет (REQ-METR-08, D-74).
+          pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+        failureReason:
+          type: string
+          description: |
+            **Обязателен у события «результат не получен».** Категория причины отказа, три
+            значения; сами значения принадлежат analytics-spec (Q-166) и здесь не перечислены.
+
+    WebAppManifest:
+      type: object
+      title: Манифест PWA
+      description: |
+        Модель полей манифесту не назначает: **ни одно требование, кроме `start_url` со статическим
+        маркером, его содержимого не касается** (data-model §2.6, REQ-ENTRY-02). Поэтому свойства
+        ниже, кроме `start_url`, иллюстративны, а схема открыта.
+      required: [start_url]
+      additionalProperties: true
+      properties:
+        name:
+          type: string
+        short_name:
+          type: string
+        start_url:
+          type: string
+          description: |
+            **Единственное нормируемое поле.** Несёт `launchMarker` — статическую константу
+            (REQ-ENTRY-02, D-41 п. 3). **Целевой путь не определён — Q-164:** маршрута `/` ни один
+            документ не описывает, а screen-map §1 прямо говорит, что стрелок в «главную» нет.
+        display:
+          type: string
+        icons:
+          type: array
+          items:
+            type: object
+            additionalProperties: true

@@ -1,0 +1,88 @@
+name: Предложить инструмент
+description: Позиция каталога по контракту D-21
+title: 'Инструмент: '
+labels: ['инструмент', 'предложение']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Шаблон повторяет пункты контракта из
+        [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) — это самофильтр, а не формальность.
+        Не сходится хотя бы один пункт — предложение не примут, и отказ назовёт именно его.
+
+  - type: input
+    id: what
+    attributes:
+      label: Что за инструмент
+      description: Одно предложение — что человек кладёт на вход и что получает.
+      placeholder: Разбирает cron-выражение и показывает ближайшие пять запусков.
+    validations:
+      required: true
+
+  - type: textarea
+    id: criteria
+    attributes:
+      label: 1. Четыре критерия D-04
+      description: По пункту на строку — как выполняется каждый.
+      value: |
+        - Вычислимо в браузере без сети:
+        - На входе текст или небольшой файл:
+        - Решение занимает секунды:
+        - Аудитория — разработчик:
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: form
+    attributes:
+      label: 2. Единая форма
+      options:
+        - label: Одно поле ввода, область результата, чипсы вариантов; своего layout нет
+          required: true
+
+  - type: textarea
+    id: budget
+    attributes:
+      label: 3. Бюджет ленивого чанка
+      description: Зависимости и их вес gzip. Тяжёлая зависимость требует отдельного обоснования.
+      placeholder: Своя реализация, зависимостей нет. Ожидаемый чанк — около 6 KB gzip.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: fixtures
+    attributes:
+      label: 4. Фикстуры
+      options:
+        - label: Готов добавить фикстуры в корпус определителя — иначе новый тип ломает лестницу
+          required: true
+
+  - type: checkboxes
+    id: registry
+    attributes:
+      label: 5. Локали и реестр
+      options:
+        - label: Обе локали и запись в `src/registry` входят в предложение
+          required: true
+
+  - type: checkboxes
+    id: red-lines
+    attributes:
+      label: 6. Красные линии
+      description: Ни одно из этого не принимается — это устройство продукта, а не «пока».
+      options:
+        - label: Сторонних origin нет; сети инструмент не касается
+          required: true
+        - label: Ввод никуда не пишется — ни в носители, ни в URL, ни в историю
+          required: true
+        - label: Возможности браузерного API не подделываются
+          required: true
+
+  - type: checkboxes
+    id: maintenance
+    attributes:
+      label: 7. Поддержка
+      description: Принятая позиция сопровождается вечно — это и есть цена «да».
+      options:
+        - label: Понимаю, что мейнтейнер вправе отказать в том, что не готов сопровождать
+          required: true

@@ -1,0 +1,39 @@
+# <Product> — CLAUDE.md
+<!-- This file is document 24 (agent-rules). Keep it under 40 lines:
+     only what the agent needs in EVERY session; everything else by link. -->
+
+# About
+<!-- 3 sentences: what, for whom, stage. -->
+
+# Commands
+<!-- only the ones that cannot be guessed: dev / build / test / lint /
+     typecheck / migrate / docker. One line each. -->
+
+# Architecture
+<!-- 3-5 lines: layout, where contracts live (docs/api-spec.md,
+     docs/data-model.md), what changes only via migrations. -->
+
+# Domain names
+- Entities, fields, roles: ENGLISH names from docs/glossary.md,
+  singular; synonyms are bugs. Events: object_action (docs/analytics-spec.md).
+
+# Workflow
+- One session = one task from docs/tasks.md: /plan T-NNN -> human
+  approves -> /clear -> /build -> /check -> /ship -> /clear -> /go.
+- One plan step = one commit; body carries "T-NNN US-NNN".
+- Typecheck after any series of code changes.
+- Found something outside the task? New T-NNN line or Q-NN — never fix "by the way".
+- Branches: feat/*, fix/*; conventional commits; PR via gh; humans merge.
+
+# Forbidden
+<!-- architecture constraints as explicit bans, each with a one-line reason:
+- IMPORTANT: no DB access outside the repository layer — breaks tenant isolation.
+- docs/openapi.yaml is generated from api-spec.md — never edit by hand. -->
+
+# Before commit
+<!-- what to run: lint, typecheck, tests of the touched module. -->
+
+# Where to look
+- Requirements: docs/prd.md · scenarios: user-flows.md · stories: user-stories.md
+- Contracts: docs/api-spec.md, data-model.md, security-and-access.md · design: docs/screen-map.md, content-guide.md · tests: docs/test-plan.md
+- Open decisions: docs/open-questions.md · queue: docs/tasks.md

@@ -1,0 +1,13 @@
+---
+// Точка проверки живости для RUN-16 и синтетики: статическая страница без JS и без стилей.
+import Base from '../layouts/Base.astro';
+
+const version = '0.0.1';
+---
+
+<Base title="DoKey — health" description="Проверка живости сборки.">
+  <main>
+    <h1>ok</h1>
+    <p>version <code data-health="version">{version}</code></p>
+  </main>
+</Base>

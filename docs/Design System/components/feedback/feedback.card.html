@@ -1,0 +1,31 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Feedback" subtitle="Toast, Tooltip, EmptyState, Dialog" -->
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>body{padding:18px 20px;background:var(--surface-card)}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.stack{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--type-code-sm);color:var(--text-subtle);width:74px;flex:0 0 74px}</style>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script></head>
+<body><div id="root"></div>
+<script type="text/babel">
+const { Button, IconButton, Badge, Tag, Card, Kbd, Input, Textarea, Select, Checkbox, RadioGroup, Switch, Tabs, Breadcrumbs, Dialog, Toast, Tooltip, EmptyState, Icon, CopyButton, CodePane, ToolCard } = window.ToolBoxDesignSystem_88556c;
+
+function Demo(){const [open,setOpen]=React.useState(false);return (<div className="stack">
+<div className="row" style={{alignItems:'flex-start',gap:14}}>
+<Toast tone="success" icon={<Icon name="check-circle-2" size={16}/>} title="Скопировано" description="JSON в буфере обмена" onClose={()=>{}}/>
+<Toast tone="danger" icon={<Icon name="alert-triangle" size={16}/>} title="Не удалось разобрать" description="Ожидались три сегмента, разделённые точкой"/>
+</div>
+<div className="row" style={{gap:18}}>
+<Tooltip content="Скопировать в буфер"><IconButton label="Копировать" variant="secondary"><Icon name="copy"/></IconButton></Tooltip>
+<Tooltip side="right" content="Наведите — подсказка справа"><Button variant="ghost" size="sm">Tooltip →</Button></Tooltip>
+<Button variant="secondary" size="sm" onClick={()=>setOpen(true)}>Открыть диалог</Button>
+</div>
+<div style={{border:'1px dashed var(--border-subtle)',borderRadius:'var(--radius-lg)'}}>
+<EmptyState compact icon={<Icon name="inbox" size={22}/>} title="Пока пусто" description="Вставьте токен слева — результат появится здесь."/>
+</div>
+<Dialog open={open} onClose={()=>setOpen(false)} title="Поделиться результатом" description="Ссылка не содержит ваши данные — только настройки инструмента."
+ footer={<><Button variant="ghost" onClick={()=>setOpen(false)}>Отмена</Button><Button onClick={()=>setOpen(false)}>Скопировать ссылку</Button></>}/>
+</div>);}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script></body></html>

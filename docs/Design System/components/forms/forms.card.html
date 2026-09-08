@@ -1,0 +1,33 @@
+<!-- @dsCard group="Components" viewport="700x360" name="Forms" subtitle="Input, Textarea, Select, Checkbox, RadioGroup, Switch" -->
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>body{padding:18px 20px;background:var(--surface-card)}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.stack{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--type-code-sm);color:var(--text-subtle);width:74px;flex:0 0 74px}</style>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script></head>
+<body><div id="root"></div>
+<script type="text/babel">
+const { Button, IconButton, Badge, Tag, Card, Kbd, Input, Textarea, Select, Checkbox, RadioGroup, Switch, Tabs, Breadcrumbs, Dialog, Toast, Tooltip, EmptyState, Icon, CopyButton, CodePane, ToolCard } = window.ToolBoxDesignSystem_88556c;
+
+function Demo(){return (<div className="stack">
+<div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14,alignItems:'start'}}>
+<Input label="Токен" mono placeholder="eyJhbGciOi…" hint="Данные не покидают браузер"/>
+<Input label="Secret" mono defaultValue="your-256-bit-secret" suffix={<Icon name="eye" size={14}/>}/>
+<Input label="URL" error="Некорректный URL" defaultValue="htp://" prefix={<Icon name="link" size={14}/>}/>
+</div>
+<div style={{display:'grid',gridTemplateColumns:'1.4fr 1fr',gap:14,alignItems:'start'}}>
+<Textarea label="Исходный текст" rows={4} defaultValue={'{\n  "sub": "1234567890",\n  "admin": true\n}'}/>
+<div style={{display:'flex',flexDirection:'column',gap:12}}>
+<Select label="Алгоритм" options={["HS256","HS384","RS256","ES256"]}/>
+<RadioGroup direction="column" options={["По словам","По символам","По строкам"]} defaultValue="По словам"/>
+</div></div>
+<div className="row" style={{gap:24}}>
+<Checkbox label="URL-safe алфавит" description="Заменяет + / на - _" defaultChecked/>
+<Checkbox label="Игнорировать пробелы"/>
+<Switch label="Живой предпросмотр" defaultChecked/>
+<Switch label="Перенос строк"/>
+</div></div>);}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script></body></html>

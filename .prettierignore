@@ -1,0 +1,9 @@
+dist/
+node_modules/
+.astro/
+pnpm-lock.yaml
+docs/
+claude-flow-v2/
+templates/
+public/fonts/
+src/ui/sprite.svg

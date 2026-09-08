@@ -1,0 +1,78 @@
+---
+// КМП-14. Единственный макет этапа Э-0: заглушка без островов и без клиентского JS.
+// noindex держится до тега релиза (implementation-plan §2.4, снимается задачей T-201).
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <slot />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #1a1a1a;
+        --muted: #595959;
+        --rule: #d4d4d4;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #101012;
+          --fg: #ededed;
+          --muted: #a1a1a1;
+          --rule: #333336;
+        }
+      }
+
+      body {
+        margin: 0;
+        padding: 3rem 1.5rem;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          16px/1.6 ui-sans-serif,
+          system-ui,
+          sans-serif;
+      }
+
+      main {
+        margin-inline: auto;
+        max-width: 42rem;
+      }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.75rem;
+      }
+
+      p {
+        margin: 0 0 1rem;
+        color: var(--muted);
+      }
+
+      hr {
+        border: 0;
+        border-top: 1px solid var(--rule);
+        margin: 2rem 0;
+      }
+
+      code {
+        font-family: ui-monospace, monospace;
+      }
+    </style>
+  </body>
+</html>

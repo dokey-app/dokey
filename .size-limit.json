@@ -1,0 +1,14 @@
+[
+  {
+    "name": "initial JS — NFR-03",
+    "path": ["dist/_astro/*.js", "dist/*.js"],
+    "limit": "40 kB",
+    "gzip": true
+  },
+  {
+    "name": "CSS оболочки",
+    "path": "dist/_astro/*.css",
+    "limit": "8 kB",
+    "gzip": true
+  }
+]

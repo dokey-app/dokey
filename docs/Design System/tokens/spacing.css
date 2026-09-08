@@ -1,0 +1,31 @@
+:root {
+  /* 4px base step */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* Component rhythm */
+  --target-min: 24px;      /* минимальный размер нажимаемой цели, WCAG 2.5.8 (D-78) */
+  --control-height-sm: 28px;
+  --control-height-md: 34px;
+  --control-height-lg: 40px;
+  --control-pad-x-sm: 10px;
+  --control-pad-x-md: 14px;
+  --control-pad-x-lg: 18px;
+  --card-pad: var(--space-5);
+  --section-gap: var(--space-12);
+  --page-max: 1240px;
+  --page-gutter: var(--space-6);
+  --sidebar-width: 244px;
+  --topbar-height: 56px;
+}
