@@ -235,7 +235,7 @@ backlog, а не только порядок задач, — поэтому ст
 1. `https://dokey.app` открывается, отдаёт страницу-заглушку; в заголовках ответа — CSP
    `script-src 'self'; connect-src 'self'`, HSTS и правила кеша.
 2. `git tag v0.0.1 && git push --tags` → зелёный конвейер → новая версия на проде одним шагом.
-3. `docker pull ghcr.io/<org>/dokey:v0.0.1` → `cosign verify` проходит, `syft` показывает SBOM,
+3. `docker pull ghcr.io/dokey-app/dokey:v0.0.1` → `cosign verify` проходит, `syft` показывает SBOM,
    provenance-аттестация читается.
 4. `docker run` поднимает ту же заглушку с теми же заголовками и **без единого сетевого обращения**
    (RUN-14).
