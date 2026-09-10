@@ -17,10 +17,21 @@
 
 ## Как проверить
 
+Проверки разведены по задачам решением **D-114**: делегирование проверяется делегированием,
+заголовки — первым деплоем. До T-011 записи на apex нет, имя не резолвится, и ответа хостинга
+не существует — включать HSTS в панели провайдера ради формы приёмки нельзя (п. 4 выше).
+
+**T-001 — зона делегирована, TLS выдан:**
+
 ```bash
-curl -sI https://dokey.app | grep -i 'strict-transport-security'
-curl -sI https://dokey.app | head -1
+dig NS dokey.app +short          # два NS Cloudflare
 ```
 
-Ответ хостинга и заголовок `strict-transport-security` — форма приёмки T-001.
+**T-011 — прод отвечает и отдаёт заголовки из `_headers`:**
+
+```bash
+curl -sI https://dokey.app | head -1
+curl -sI https://dokey.app | grep -i 'strict-transport-security'
+```
+
 Полную сверку заголовков делает `pnpm check:headers` с `DOKEY_TARGET=https://dokey.app`.
