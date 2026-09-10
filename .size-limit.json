@@ -1,8 +1,27 @@
 [
   {
     "name": "initial JS — NFR-03",
-    "path": ["dist/_astro/*.js", "dist/*.js"],
+    "measure": "initial-js",
+    "path": "dist/**/*.html",
     "limit": "40 kB",
+    "gzip": true
+  },
+  {
+    "name": "чанк редактора — NFR-06",
+    "path": "dist/_astro/editor.*.js",
+    "limit": "90 kB",
+    "gzip": true
+  },
+  {
+    "name": "шрифты критического пути — NFR-18",
+    "path": "dist/fonts/jetbrains-mono-*.woff2",
+    "limit": "48 kB",
+    "gzip": true
+  },
+  {
+    "name": "чанки каталога в precache — NFR-18",
+    "path": "dist/_astro/tool-*.js",
+    "limit": "120 kB",
     "gzip": true
   },
   {
