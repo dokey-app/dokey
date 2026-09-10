@@ -98,7 +98,7 @@ ENT-21…ENT-30).
 этапе нет.
 
 - [ ] T-001 — завести аккаунт Cloudflare, зарегистрировать `dokey.app`, делегировать зону, проверить TLS (TECH-01, D-86, D-114, D-125): границы — `infra/dns/README.md`; готово — `dig NS dokey.app +short` отдаёт NS Cloudflare, зона активна, сертификат выдан, почтовый алиас `privacy@dokey.app` принимает письмо
-- [ ] T-002 — занять имя `dokey` на GitHub и создать публичный репозиторий (TECH-13) ⚠ Q-233: границы — настройки репозитория, `README.md` в одну строку; готово — репозиторий открывается анонимно
+- [ ] T-002 — занять на GitHub организацию `dokey-app` и создать в ней публичный репозиторий `dokey` (TECH-13, D-155): границы — настройки репозитория, `README.md` в одну строку; готово — `github.com/dokey-app/dokey` открывается анонимно
 - [x] T-003 — положить LICENSE Apache-2.0, NOTICE, CONTRIBUTING, CODE_OF_CONDUCT (TECH-12): границы — четыре файла в корне; готово — GitHub показывает лицензию Apache-2.0 в шапке репозитория
 - [x] T-004 — завести шаблоны issue и PR по контракту D-21 (TECH-12, готовит US-050): границы — `.github/ISSUE_TEMPLATE/*`, `.github/pull_request_template.md`; готово — форма нового issue предлагает шаблон «предложить инструмент» с семью пунктами контракта
 - [x] T-005 — поднять каркас Astro 7.3.1, `output: 'static'`, ноль интеграций фреймворков (TECH-04, ADR-01): границы — `package.json`, `astro.config.mjs`, `tsconfig.json`, `src/pages/index.astro`; готово — `pnpm build` даёт статический каталог
@@ -118,7 +118,7 @@ ENT-21…ENT-30).
 - [ ] T-019 — написать негативные проверки для G-01, G-02, G-06, RUN-16 и самопроверку покрытия по `GATES` (US-047, D-106, D-150): границы — `tests/gates/negative/*`, `package.json`; готово — `pnpm test:gates:negative`: намеренно нарушающие сборки валят конвейер, включая обе половины правила профиля RUN-16 — HSTS, вернувшийся в образ, и HSTS, пропавший с прода (D-150)
 - [x] T-020 — собрать образ multi-stage на nginx 1.30.4-alpine, non-root (TECH-09, ADR-14): границы — `infra/docker/Dockerfile`, `infra/docker/nginx.conf`, `.dockerignore`; готово — `docker build && docker run` отдаёт заглушку
 - [ ] T-021 — вывести обе копии заголовков из единого источника (TECH-09, D-107, D-149, D-150): границы — `infra/headers/policy.ts`, `scripts/build-headers.ts`, `infra/headers/_headers`, `infra/docker/headers.conf`, `infra/docker/nginx.conf`, `scripts/gates/headers-parity.ts`, `package.json`; готово — `pnpm build:headers` выводит оба артефакта из `policy.ts` (включая кеш-правила), nginx подключает `headers.conf` через `include`, `pnpm gate:headers-parity` красный, если перегенерация даёт дифф; профиль — параметр `policy.ts`, а не второй список: HSTS выводится только в `_headers` (D-150), `require-trusted-types-for` — в оба артефакта (D-149)
-- [ ] T-022 — публиковать образ в GHCR из релизного конвейера (US-048): границы — `.github/workflows/release.yml`; готово — `docker pull ghcr.io/<org>/dokey:v0.0.1` анонимно
+- [ ] T-022 — публиковать образ в GHCR из релизного конвейера (US-048): границы — `.github/workflows/release.yml`; готово — `docker pull ghcr.io/dokey-app/dokey:v0.0.1` анонимно
 - [ ] T-023 — подписывать образ cosign keyless, прикладывать provenance и SBOM (TECH-10, US-048, ADR-15, D-148): границы — `.github/workflows/release.yml`, `docs/content/how-to-verify`; готово — `cosign verify` и проверка аттестации проходят на свежем теге **с `--certificate-oidc-issuer https://token.actions.githubusercontent.com` и `--certificate-identity-regexp` на релизный workflow**, а та же команда без пиннинга признаётся непройденной проверкой
 - [ ] T-024 — написать инструкцию сверки образа для ROLE-05 (US-048): границы — `README.md`, `SECURITY.md`; готово — три команды из инструкции выполняются как есть на чистой машине
 - [ ] T-025 — проверить образ системным прогоном: ноль сетевых обращений, первый ответ ≤ 5 с (RUN-14, NFR-16): границы — `tests/system/image.spec.ts`, `.github/workflows/release.yml`; готово — `pnpm test:image`
@@ -133,6 +133,7 @@ ENT-21…ENT-30).
 - [ ] T-210 — привести `src/README.md` и `scripts/gates/README.md` к формату Prettier (найдено T-001 2026-09-10): границы — два файла; готово — `pnpm format:check` зелёный
 - [ ] T-211 — довести пересчёт полного пути D-146 до 49,75–80,25: итог таблицы §6.2 и три строки календаря §6.3 с датами, РС-02, О-02 (найдено /questions 2026-09-10): границы — `docs/implementation-plan.md` §6.2, §6.3, `docs/roadmap.md` §5, `docs/tech-stack.md` О-02; готово — grep по «48,75» и «78,25» в `docs/` находит их только в истории решений (`decisions.md`)
 - [ ] T-212 — снять с Q-223 пометку открытого P1 в таблице новых вопросов промта: вопрос закрыт D-103 (найдено /questions 2026-09-10): границы — `docs/design-system-prompt.md` §4; готово — строка Q-223 зачёркнута и ссылается на D-103, как соседняя Q-222
+- [ ] T-213 — заменить адреса `github.com/dokey/dokey` и `ghcr.io/dokey/dokey` на `dokey-app` (D-155, найдено /questions 2026-09-10): границы — `src/pages/index.astro`, `README.md`, `.github/ISSUE_TEMPLATE/config.yml`; готово — `git grep -nE "(github\.com|ghcr\.io)/dokey/" -- src README.md .github` пуст, `pnpm build` проходит
 
 ---
 
@@ -480,12 +481,11 @@ Workbench; неприехавшая логика объясняет себя т�
 
 ### 14.3. Задачи, заблокированные вопросом
 
-Задача с пометкой `⚠ Q-NN` одна: T-002 ждёт Q-233 — пространство имён `dokey` на GitHub
-занято. T-202 разблокирована решением D-145.
+Задач с пометкой `⚠ Q-NN` не осталось: последняя, T-002, разблокирована решением D-155.
 
 | Задача | Вопрос | Этап |
 |---|---|---|
-| T-002 | **Q-233** (P1) — логин `dokey` на GitHub занят чужим пользователем, D-20 п. 3 невыполним | Э-0 |
+| ~~T-002~~ | ~~Q-233~~ — закрыт **D-155** 2026-09-10: организация `dokey-app`, логин `dokey` занят | Э-0 |
 | ~~T-202~~ | ~~Q-214~~ — закрыт **D-145** 2026-09-10: критерий требует G-01…G-14 без исключений | Релиз |
 
 ---
