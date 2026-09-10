@@ -1,10 +1,12 @@
-# Единственный источник заголовков ответа (ST-03, TECH-02).
-# Копия этой политики живёт в infra/docker/nginx.conf; равенство копий сверяет
-# `pnpm gate:headers-parity` — расхождение двух копий уже названо вопросом Q-158.
+# ВЫВОДИТСЯ из infra/headers/policy.ts — единственного источника политики (D-107, ST-03,
+# TECH-02). Руками не правится: правка идёт в policy.ts, затем `pnpm build:headers`.
+# До T-021 генератора ещё нет, и этот файл написан руками — как и вторая копия в
+# infra/docker/nginx.conf; `pnpm gate:headers-parity` сверяет их до тех пор, а после
+# T-021 проверяет, что перегенерация не даёт диффа.
 # Набор директив — SEC-22; ИНВ-01 держится строкой script-src/connect-src 'self'.
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; require-trusted-types-for 'script'
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff

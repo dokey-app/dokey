@@ -5,7 +5,7 @@ import { type Gate, pending, runGate } from './gate.ts';
 export const gate: Gate = {
   id: 'G-05',
   command: 'gate:fields',
-  claim: 'закрытый список полей аналитики',
+  claim: 'закрытые списки полей и имён событий аналитики',
   enabledIn: 'Э-1',
   run: () => pending('Э-1'),
 };
