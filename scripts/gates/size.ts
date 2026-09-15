@@ -2,19 +2,22 @@ import { glob, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import filePlugin from '@size-limit/file';
+import { init, parse } from 'es-module-lexer';
 import sizeLimit from 'size-limit';
 import { type Gate, fail, pass, pending, runGate } from './gate.ts';
+
+await init;
 
 // G-02 «бюджеты веса» — NFR-03, NFR-06, NFR-18. Единственный источник бюджетов —
 // `.size-limit.json`; счёт ведёт size-limit 13.0.3 (ADR-16) своим Node API, потому что
 // бюджет, чьего предмета в сборке ещё нет, должен читаться как «предмета нет», а не как
 // ошибка инструмента.
 //
-// «Initial JS» считается по определению D-88 (docs/decisions.md) — здесь ссылка, а не копия.
-// У строки с `"measure": "initial-js"` в `path` лежат не файлы счёта, а корни графа — HTML
-// маршрутов. Маршрут — каждый HTML сборки: это надмножество маршрутов реестра, и порог от
-// этого строже, а не мягче. Спецификатор, который не разрешается в файл сборки, — провал:
-// неразрешённое не может молча выпасть из счёта.
+// «Initial JS» считается по определению D-88, уточнённому D-156 (docs/decisions.md), — здесь
+// ссылка, а не копия. У строки с `"measure": "initial-js"` в `path` лежат не файлы счёта, а
+// корни графа — HTML маршрутов. Спецификатор, который не разрешается в файл сборки, — провал:
+// неразрешённое не может молча выпасть из счёта. По той же причине путь бюджета, не нашедший
+// файла, когда соседние нашли, — провал, а не счёт части предмета за целое.
 
 interface Budget {
   name: string;
@@ -36,13 +39,18 @@ function toBytes(limit: string): number {
   return Number(amount) * factor;
 }
 
-async function expand(patterns: string | string[]): Promise<string[]> {
+export async function expand(
+  patterns: string | string[],
+): Promise<{ files: string[]; missing: string[] }> {
   const list = Array.isArray(patterns) ? patterns : [patterns];
   const files: string[] = [];
+  const missing: string[] = [];
   for (const pattern of list) {
+    const before = files.length;
     for await (const entry of glob(pattern)) files.push(entry);
+    if (files.length === before) missing.push(pattern);
   }
-  return files.toSorted();
+  return { files: files.toSorted(), missing };
 }
 
 async function measure(files: string[], gzip: boolean): Promise<number> {
@@ -51,14 +59,27 @@ async function measure(files: string[], gzip: boolean): Promise<number> {
   return result?.size ?? 0;
 }
 
-// Комментарий и <script> ищутся одной регуляркой слева направо: закомментированный тег
-// не исполняется, а `<!--` внутри кода скрипта не съедает следующий тег.
-const TAG = /<!--[\s\S]*?-->|<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+// HTML читается одной регуляркой слева направо, как токенизатор браузера: комментарий,
+// <script>, <style> и любой другой открывающий тег поглощаются целиком, со значениями
+// атрибутов в кавычках. Поэтому `<script` и `<!--` в атрибуте чужого тега (Astro экранирует
+// там только `&` и `"`), в стилях или в коде скрипта за тег не принимаются. Комментарий
+// закрывается там же, где у браузера: `<!-->`, `<!--->`, `-->`, `--!>`. Имя тега берётся
+// целиком, до пробела, `/` или `>`: имя, способное кончиться раньше, делит символы с ATTRS,
+// и незакрытый тег разбирался бы всеми способами сразу.
+const ATTRS = String.raw`(?:[^>"'=]|=\s*"[^"]*"|=\s*'[^']*'|=(?!\s*["'])|["'])*`;
+const TAG = new RegExp(
+  [
+    String.raw`<!--(?:-?>|[\s\S]*?--!?>)`,
+    String.raw`<script(?=[\s/>])(${ATTRS})>([\s\S]*?)<\/script(?=[\s/>])[^>]*>`,
+    String.raw`<style(?=[\s/>])${ATTRS}>[\s\S]*?<\/style(?=[\s/>])[^>]*>`,
+    String.raw`<[a-z][^\s/>]*(?=[\s/>])${ATTRS}>`,
+  ].join('|'),
+  'gi',
+);
 const ATTR = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
 
-// Что браузер исполняет как JS: без `type`, «JavaScript MIME type» по HTML и `module`.
-// JSON-LD, `importmap`, `speculationrules` — не JS. Параметры MIME отбрасываются:
-// лишний счёт безопаснее недосчёта.
+// Исполняемые типы — D-156 п. 2. Параметры MIME отбрасываются: лишний счёт безопаснее
+// недосчёта.
 const JS_TYPES = new Set([
   '',
   'module',
@@ -80,12 +101,6 @@ const JS_TYPES = new Set([
   'text/x-javascript',
 ]);
 
-// Статические `import … from`, `export … from` и `import "…"`. Между ключевым словом и
-// `from` допустимы только имена, `{}`, `*`, `,` и пробелы — скобки и точки туда не входят,
-// поэтому `import(` и `import.meta` не совпадают по построению.
-const STATIC_IMPORT =
-  /(?<![\w$.])(?:import|export)\s*(?:[\w$\s{},*]*?\bfrom\s*)?(["'])([^"'\r\n]+)\1/g;
-
 interface Script {
   src: string | undefined;
   code: string;
@@ -101,10 +116,10 @@ function attributes(raw: string): Map<string, string> {
   return map;
 }
 
-function scriptsOf(html: string): Script[] {
+export function scriptsOf(html: string): Script[] {
   const scripts: Script[] = [];
-  for (const [tag, raw, code = ''] of html.matchAll(TAG)) {
-    if (tag.startsWith('<!--') || raw === undefined) continue;
+  for (const [, raw, code = ''] of html.matchAll(TAG)) {
+    if (raw === undefined) continue;
     const attrs = attributes(raw);
     const type = (attrs.get('type')?.split(';')[0] ?? '').trim().toLowerCase();
     if (!JS_TYPES.has(type)) continue;
@@ -113,8 +128,17 @@ function scriptsOf(html: string): Script[] {
   return scripts;
 }
 
-function specifiersOf(code: string): string[] {
-  return [...code.matchAll(STATIC_IMPORT)].map(([, , specifier = '']) => specifier);
+// Статические `import … from`, `export … from` и `import "…"` модуля находит `es-module-lexer` —
+// лексер самого Vite (D-158): регулярка не знает, где в JS комментарий, строка или регулярное
+// выражение. Ребро графа — запись с `d === -1`; `import()` (`d ≥ 0`) и `import.meta`
+// (`d === -2`) рёбрами не являются. Текст, который лексер не разбирает, — исключение, а не
+// пустой список: неразобранное не выпадает из счёта молча. Ведущий BOM снимается, как его
+// снимает декодер браузера: лексер читает `BOM + import` как имя и теряет первый импорт.
+const BOM = String.fromCharCode(0xfeff);
+
+export function specifiersOf(code: string): string[] {
+  const [imports] = parse(code.startsWith(BOM) ? code.slice(1) : code);
+  return imports.flatMap((entry) => (entry.d === -1 && entry.n !== undefined ? [entry.n] : []));
 }
 
 function display(file: string): string {
@@ -156,33 +180,45 @@ async function graphOf(htmlFile: string): Promise<RouteGraph> {
   const html = resolve(htmlFile);
   const route = routeOf(html);
   const inline: string[] = [];
-  const edges: { specifier: string; from: string }[] = [];
+  // `module` у ребра — цель исполняется как модуль, и её статические импорты обходятся.
+  // Классический скрипт статических импортов не содержит: его файл считается, а текст,
+  // похожий на импорт, в нём — комментарий или строка, а не ребро графа.
+  const edges: { specifier: string; from: string; module: boolean }[] = [];
+  const problems: string[] = [];
+
+  const importsOf = (code: string, where: string, from: string): void => {
+    let specifiers: string[];
+    try {
+      specifiers = specifiersOf(code);
+    } catch {
+      problems.push(`${route}: ${where} не разбирается как модуль`);
+      return;
+    }
+    for (const specifier of specifiers) edges.push({ specifier, from, module: true });
+  };
 
   for (const script of scriptsOf(await readFile(html, 'utf8'))) {
     if (script.src !== undefined) {
-      edges.push({ specifier: script.src, from: html });
+      edges.push({ specifier: script.src, from: html, module: script.module });
     } else if (script.code.trim() !== '') {
       inline.push(script.code);
-      if (script.module) {
-        for (const specifier of specifiersOf(script.code)) edges.push({ specifier, from: html });
-      }
+      if (script.module) importsOf(script.code, `инлайн №${inline.length}`, html);
     }
   }
 
   const files = new Set<string>();
-  const problems: string[] = [];
+  const walked = new Set<string>();
   // Обход в ширину: for…of по массиву видит рёбра, дописанные по ходу.
-  for (const { specifier, from } of edges) {
+  for (const { specifier, from, module } of edges) {
     const target = await resolveSpecifier(specifier, from);
     if (target === undefined) {
       problems.push(`${route}: «${specifier}» из ${display(from)} не разрешается в файл сборки`);
       continue;
     }
-    if (files.has(target)) continue;
     files.add(target);
-    for (const next of specifiersOf(await readFile(target, 'utf8'))) {
-      edges.push({ specifier: next, from: target });
-    }
+    if (!module || walked.has(target)) continue;
+    walked.add(target);
+    importsOf(await readFile(target, 'utf8'), display(target), target);
   }
 
   return { route, inline, files: [...files], problems };
@@ -258,11 +294,17 @@ export const gate: Gate = {
         continue;
       }
 
-      const files = await expand(budget.path);
+      const { files, missing } = await expand(budget.path);
       const limit = toBytes(budget.limit);
 
       if (files.length === 0) {
         lines.push(`  ${budget.name}: предмета в сборке нет, бюджет ${budget.limit}`);
+        continue;
+      }
+      if (missing.length > 0) {
+        broken.push(
+          `${budget.name}: в сборке нет ${missing.join(', ')} — часть предмета за целое не мерится`,
+        );
         continue;
       }
 
