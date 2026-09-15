@@ -50,11 +50,11 @@ pnpm gate:headers-parity # две копии заголовков ответа �
 **1. Заголовки ответа.**
 
 ```bash
-curl -sI https://dokey.app | grep -iE 'content-security-policy|strict-transport-security'
+curl -sI https://dokey.ru | grep -iE 'content-security-policy|strict-transport-security'
 ```
 
 `script-src 'self'` и `connect-src 'self'` — то самое место, где обещание либо держится,
-либо нет. Полная сверка: `DOKEY_TARGET=https://dokey.app pnpm check:headers`.
+либо нет. Полная сверка: `DOKEY_TARGET=https://dokey.ru pnpm check:headers`.
 
 **2. Ни одного стороннего запроса.** Откройте вкладку «Сеть» в инструментах разработчика и
 перезагрузите страницу: чужих origin быть не должно ни одного.
