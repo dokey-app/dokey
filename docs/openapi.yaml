@@ -36,10 +36,11 @@ info:
   x-status: черновик к согласованию
 
 servers:
-  - url: https://dokey.app
+  - url: https://dokey.ru
     description: |
       Прод. Профиль сборки `public`: телеметрия (`/s/script.js`, `/s/event`) присутствует.
-      HTTP невозможен по построению — зона `.app` целиком в HSTS-preload (ИНТ-09).
+      HTTP закрыт редиректом и HSTS: зона `.ru` в HSTS-preload не входит, домен подаётся
+      в список отдельно — T-223 (ИНТ-09, D-175).
   - url: "{scheme}://{host}"
     description: |
       Образ во внутренней сети организации (ENT-27, ИНТ-05). Профиль сборки `selfhosted`:

@@ -90,11 +90,13 @@ D-64, D-67, D-70, D-71, D-73, D-82), [prd.md](prd.md) (REQ-*, NFR-*).
 
 | Базовый URL | Что это | Профиль сборки | Аналитика | Кто владеет |
 |---|---|---|---|---|
-| `https://dokey.app` | Прод: статические ассеты и прокси `/s/event` на Cloudflare Workers (ADR-10) | `public` | Есть — ЭП-09 | ROLE-03 |
+| `https://dokey.ru` | Прод: статические ассеты и прокси `/s/event` на Cloudflare Workers (ADR-10) | `public` | Есть — ЭП-09 | ROLE-03 |
 | `http(s)://<внутренний-хост>` | Образ во внутренней сети организации (ENT-27, ИНТ-05) | `selfhosted` | **Физически отсутствует** (ИНВ-11): ЭП-09 в артефакте нет | ROLE-02 |
 | `https://<vps>` | Umami 3 на VPS — **апстрим прокси, не наша поверхность** (ИНТ-03, ADR-11). Только HTTPS, сертификат на поддомене (D-94) | — | Приёмник | ROLE-03 |
 
-**HTTP на проде невозможен по построению:** зона `.app` целиком в HSTS-preload (ИНТ-09). Во
+**HTTP на проде закрыт редиректом и HSTS, а не зоной** (ИНТ-09, D-175): `.ru` в HSTS-preload не
+входит, домен подаётся в список отдельной задачей T-223, и до включения первый заход по `http://`
+остаётся возможным — он обрывается редиректом на HTTPS. Во
 внутреннем контуре `http` штатен и имеет последствие: `crypto.subtle` и service worker требуют
 защищённого контекста, поэтому часть каталога объявляет отказ вместо работы (ИНВ-12, D-64) —
 см. ERR-07 и **D-89**.
@@ -427,12 +429,12 @@ ROLE-05 это и есть точка интеграции с продуктом
 
 | `Tool.id` | Маршрут | Продуктовое имя (глоссарий §4) |
 |---|---|---|
-| `json` | `dokey.app/json` | JSON Workbench |
-| `jwt` | `dokey.app/jwt` | JWT Inspector |
-| `base64` | `dokey.app/base64` | Base64 Encoder/Decoder |
-| `url` | `dokey.app/url` | URL Encoder/Decoder |
-| `unix-timestamp` | `dokey.app/unix-timestamp` | Unix Timestamp Converter |
-| `uuid` | `dokey.app/uuid` | UUID/ULID Generator |
+| `json` | `dokey.ru/json` | JSON Workbench |
+| `jwt` | `dokey.ru/jwt` | JWT Inspector |
+| `base64` | `dokey.ru/base64` | Base64 Encoder/Decoder |
+| `url` | `dokey.ru/url` | URL Encoder/Decoder |
+| `unix-timestamp` | `dokey.ru/unix-timestamp` | Unix Timestamp Converter |
+| `uuid` | `dokey.ru/uuid` | UUID/ULID Generator |
 
 Правило выбора — имя **формата**, а не глагола: `id` неизменен навсегда, а инструменты растут.
 `unix-timestamp` — единственное уточнённое: `timestamp` не различает Unix и ISO.
@@ -449,9 +451,9 @@ query, фрагменте и истории** (ИНВ-02, NFR-10). Параме�
 <head>
   <title><!-- ToolLanding.title, уникален по всей сборке --></title>
   <meta name="description" content="<!-- ToolLanding.description -->">
-  <link rel="canonical" href="https://dokey.app/{toolId}">
-  <link rel="alternate" hreflang="ru" href="https://dokey.app/{toolId}">
-  <link rel="alternate" hreflang="x-default" href="https://dokey.app/{toolId}">
+  <link rel="canonical" href="https://dokey.ru/{toolId}">
+  <link rel="alternate" hreflang="ru" href="https://dokey.ru/{toolId}">
+  <link rel="alternate" hreflang="x-default" href="https://dokey.ru/{toolId}">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml">
 </head>
@@ -521,7 +523,7 @@ query, фрагменте и истории** (ИНВ-02, NFR-10). Параме�
 (ИНВ-06): расхождение sitemap и реестра — 0, гейт CI (US-002 крит. 2).
 
 **В профиле `selfhosted` документа нет** (D-163): во внутреннем контуре краулера нет, а образ
-собирается с `site: 'https://dokey.app'`, и его sitemap перечислял бы адреса чужого хоста. G-07
+собирается с `site: 'https://dokey.ru'`, и его sitemap перечислял бы адреса чужого хоста. G-07
 учитывает профиль: в `public` — «sitemap ≡ реестр», в `selfhosted` — «sitemap отсутствует».
 ИНВ-06 цел: реестр — единственный источник, профиль решает, выпускать ли производную.
 
@@ -534,9 +536,9 @@ query, фрагменте и истории** (ИНВ-02, NFR-10). Параме�
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://dokey.app/{toolId}</loc>
-    <xhtml:link rel="alternate" hreflang="ru" href="https://dokey.app/{toolId}"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://dokey.app/{toolId}"/>
+    <loc>https://dokey.ru/{toolId}</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://dokey.ru/{toolId}"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://dokey.ru/{toolId}"/>
   </url>
 </urlset>
 ```
@@ -559,7 +561,7 @@ query, фрагменте и истории** (ИНВ-02, NFR-10). Параме�
 | Состав | Где | Содержимое |
 |---|---|---|
 | Индексация закрыта | Прод до открытия индексации и staging (D-111) | `User-agent: *`, `Disallow: /` |
-| Индексация открыта | Прод после T-201 | `User-agent: *`, `Disallow: /s/`, `Sitemap: https://dokey.app/sitemap.xml` |
+| Индексация открыта | Прод после T-201 | `User-agent: *`, `Disallow: /s/`, `Sitemap: https://dokey.ru/sitemap.xml` |
 | `selfhosted` | Образ (ENT-27) | `User-agent: *`, `Disallow: /`; строки `Sitemap` нет (D-163) |
 
 **`Disallow: /s/` закрывает путь прокси** — обход не доходит до кода прокси, а не только
@@ -628,7 +630,7 @@ OpenSearch (PM-07) назначается вместе с ним.
 <OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
   <ShortName>dk</ShortName>
   <Description><!-- SearchShortcut.description --></Description>
-  <Url type="text/html" template="https://dokey.app/?src=shortcut"/>
+  <Url type="text/html" template="https://dokey.ru/?src=shortcut"/>
 </OpenSearchDescription>
 ```
 
@@ -877,7 +879,7 @@ ROLE-03 (architecture §8.3).
 
 | Гарантия | Чем обеспечена |
 |---|---|
-| Целостность и конфиденциальность канала | HTTPS; зона `.app` в HSTS-preload — HTTP невозможен (ИНТ-09) |
+| Целостность и конфиденциальность канала | HTTPS; редирект с `http` и HSTS с `preload`. Зона `.ru` в HSTS-preload не входит — домен подаётся в список отдельно, T-223 (ИНТ-09, D-175) |
 | Происхождение запроса | Same-origin: событие идёт на свой origin через прокси, `connect-src 'self'` без исключений (ИНВ-01, D-22) |
 | Отсутствие лишнего в теле | Гейт закрытого списка полей на каждой сборке (ИНВ-05) |
 | Достоверность агрегатов | **Не обеспечена ничем, и это принято.** Приёмник открыт, подделать событие может кто угодно |
@@ -916,7 +918,7 @@ README. **Наружу обещается дата, а не периодично
 нет), либо открытого приёмника без проверки подписи. Единственный `POST` продукта — исходящий (ЭП-09).
 
 **Что заведено вместо мониторинга по вебхуку** (architecture §8.3, **D-108**):
-синтетическая проверка в том же расписании Actions — `curl` на `dokey.app` и на путь прокси, при
+синтетическая проверка в том же расписании Actions — `curl` на `dokey.ru` и на путь прокси, при
 неуспехе заводится issue. Ноль новых поставщиков, ноль денег, ноль сторонних origin в сборке.
 
 ---

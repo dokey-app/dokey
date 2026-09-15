@@ -59,7 +59,7 @@ jobs:
       # RUN-16: живой origin обязан отдавать ровно то, что объявлено в _headers.
       - name: Сверка заголовков прода
         env:
-          DOKEY_TARGET: https://dokey.app
+          DOKEY_TARGET: https://dokey.ru
         run: node --experimental-strip-types scripts/check-headers.ts
 
   image:

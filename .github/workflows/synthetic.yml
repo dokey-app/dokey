@@ -25,7 +25,7 @@ jobs:
           node-version: '24'
       - name: Сверка заголовков
         env:
-          DOKEY_TARGET: https://dokey.app
+          DOKEY_TARGET: https://dokey.ru
         run: node --experimental-strip-types scripts/check-headers.ts
       - name: Завести issue при провале
         if: failure()
