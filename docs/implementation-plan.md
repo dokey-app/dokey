@@ -148,7 +148,7 @@ dokey/
 ├─ docs/                        # существующий корпус документов
 ├─ infra/
 │  ├─ headers/_headers          # CSP, HSTS, кеш — единственный источник (ST-03)
-│  ├─ docker/{Dockerfile, nginx.conf, .dockerignore}
+│  ├─ docker/{Dockerfile, nginx.conf}
 │  └─ vps/docker-compose.umami.yml
 ├─ scripts/
 │  ├─ gates/                    # G-03…G-14, по файлу на гейт
@@ -174,6 +174,7 @@ dokey/
 │  └─ styles/                   # токены дизайн-системы, шрифты, спрайт
 ├─ fixtures/                    # КМП-15: корпус ENT-21a + генератор синтетических токенов
 ├─ tests/{unit, integration, e2e, invariants}/
+├─ .dockerignore                # в корне: Docker читает его из корня контекста сборки (D-174)
 └─ astro.config.mjs, package.json, tsconfig.json, .size-limit.json,
    lighthouserc.json, playwright.config.ts, vitest.config.ts, .oxlintrc.json
 ```
