@@ -14,7 +14,11 @@
   },
   {
     "name": "шрифты критического пути — NFR-18",
-    "path": "dist/fonts/jetbrains-mono-*.woff2",
+    "path": [
+      "dist/fonts/manrope-400.woff2",
+      "dist/fonts/manrope-600.woff2",
+      "dist/fonts/jetbrains-mono-400.woff2"
+    ],
     "limit": "48 kB",
     "gzip": true
   },
