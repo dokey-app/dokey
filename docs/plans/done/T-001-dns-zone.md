@@ -2,7 +2,7 @@
 
 ## Request
 
-- [ ] T-001 — завести аккаунт Cloudflare, оформить `dokey.ru` у регистратора, делегировать зону, проверить TLS (TECH-01, D-86, D-114, D-125, D-175): границы — `infra/dns/README.md`; готово — `dig NS dokey.ru +short` отдаёт NS Cloudflare, зона активна, сертификат выдан, почтовый алиас `privacy@dokey.ru` принимает письмо
+- [x] T-001 — завести аккаунт Cloudflare, оформить `dokey.ru` у регистратора, делегировать зону, проверить TLS (TECH-01, D-86, D-114, D-125, D-175): границы — `infra/dns/README.md`; готово — `dig NS dokey.ru +short` отдаёт NS Cloudflare, зона активна, сертификат выдан, почтовый алиас `privacy@dokey.ru` принимает письмо
 
 Links: TECH-01 · D-86 п. 3 · D-114 · D-125 п. 2 · **D-175** · D-162 пп. 4–5 · D-164 п. 4 · SEC-11, SEC-12 · ИНТ-09 · ST-03
 
@@ -49,28 +49,39 @@ D-162 п. 5).
 
 Шаги Ч — мейнтейнер руками (агент не заводит учётки), шаги А — сессия /build. Коммит один.
 
-- [ ] Ч1 Cloudflare: аккаунт, Free, 2FA TOTP/passkey (не SMS), резервные коды офлайн (SEC-11).
-- [ ] Ч2 Учётная запись регистратора: 2FA не SMS; запрет смены регистратора и администратора,
+- [x] Ч1 Cloudflare: аккаунт, Free, 2FA TOTP/passkey (не SMS), резервные коды офлайн (SEC-11).
+- [x] Ч2 Учётная запись регистратора: 2FA не SMS; запрет смены регистратора и администратора,
       автопродление включены; `dokey.ru` продлён на несколько лет (D-162 п. 4) — по цене
       укладывается в О-03; напоминание за 60 дней до истечения в календаре (SEC-12).
-- [ ] Ч3 Cloudflare → Add site `dokey.ru`, Free: Managed robots.txt и блок AI-краулеров
+      **Итог:** всё, кроме продления, — домен оплачен по 2027-08-28; PO закрыл задачу с годом
+      оплаты, продление вынесено в T-226.
+- [x] Ч3 Cloudflare → Add site `dokey.ru`, Free: Managed robots.txt и блок AI-краулеров
       **выключены** (D-164 п. 4), HSTS не включается. Взять пару NS.
-- [ ] Ч4 У регистратора: NS → пара Cloudflare. Дождаться статуса Active в Cloudflare.
-- [ ] Ч5 Зона Active → Email Routing: подтвердить ящик пересылки, `privacy@dokey.ru` → ящик
+- [x] Ч4 У регистратора: NS → пара Cloudflare. Дождаться статуса Active в Cloudflare.
+- [x] Ч5 Зона Active → Email Routing: подтвердить ящик пересылки, `privacy@dokey.ru` → ящик
       (MX и SPF Cloudflare ставит сам). Письмо с внешнего адреса дошло.
-- [ ] А1 Проверка фактов. verify: `Resolve-DnsName -Type NS dokey.ru -Server 1.1.1.1` — два
+- [x] А1 Проверка фактов. verify: `Resolve-DnsName -Type NS dokey.ru -Server 1.1.1.1` — два
       `*.ns.cloudflare.com`; `Resolve-DnsName -Type MX dokey.ru` — `route{1,2,3}.mx.cloudflare.net`;
       `curl -s "https://crt.sh/?q=dokey.ru&output=json"` — ≥ 1 сертификат на `dokey.ru`
-- [ ] А2 `infra/dns/README.md`: «Результат» заполнен, плюс строки «запрет смены регистратора /
+- [x] А2 `infra/dns/README.md`: «Результат» заполнен, плюс строки «запрет смены регистратора /
       автопродление» и «Managed robots.txt»; в блок T-001 — команды MX и CT. verify: `pnpm format:check`
-- [ ] А3 `docs/open-questions.md`: Q-238, Q-239 по правилам /questions; `docs/tasks.md`: `- [x] T-001`;
+- [x] А3 `docs/open-questions.md`: Q-238, Q-239 по правилам /questions; `docs/tasks.md`: `- [x] T-001`;
       чек-лист PR; ветка `t-001-zone-live` от HEAD; коммит `T-001: зона dokey.ru делегирована на
       Cloudflare (TECH-01)`. verify: `pnpm lint && pnpm format:check && pnpm typecheck`
 
 ## Done when
 
 - NS зоны — пара Cloudflare, статус зоны Active, в CT-логе есть сертификат на `dokey.ru`.
-- Домен оплачен более чем на год вперёд, автопродление и запрет смены регистратора включены.
+- ~~Домен оплачен более чем на год вперёд~~ — перенесено в T-226 решением PO 2026-09-16;
+  автопродление и запрет смены регистратора включены.
 - Письмо на `privacy@dokey.ru` дошло до ящика пересылки; MX указывают на Cloudflare.
 - В «Результате» нет прочерков, адреса пересылки там нет.
 - CI нет до T-013, remote — до T-002: проверки внешние, коммит локальный, PR — после T-002.
+
+## Result
+
+2026-09-16. NS в реестре `.ru` и на 1.1.1.1 — `kellen.ns.cloudflare.com`, `penny.ns.cloudflare.com`;
+MX — `route{1,2,3}.mx.cloudflare.net`; в CT-логе (Cert Spotter) сертификат Let's Encrypt на
+`dokey.ru` и `*.dokey.ru` от 2026-09-16. Письмо на алиас дошло — со слов PO. `crt.sh` в тот день
+отвечал 404 и 502, поэтому проверка CT в рунбуке переведена на Cert Spotter. Попутно: T-225
+(алиасы `security@`, `conduct@` — сделано), T-226 (продление), Q-238, Q-239.

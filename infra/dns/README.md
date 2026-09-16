@@ -51,7 +51,14 @@
 
 ```bash
 dig NS dokey.ru +short          # два NS Cloudflare
+dig MX dokey.ru +short          # route{1,2,3}.mx.cloudflare.net — Email Routing
+curl -s "https://api.certspotter.com/v1/issuances?domain=dokey.ru&expand=dns_names" \
+  | grep -c dokey.ru            # ≥ 1 сертификат в логах Certificate Transparency
 ```
+
+На Windows без `dig` то же самое даёт `Resolve-DnsName -Type NS dokey.ru -Server 1.1.1.1`.
+Сертификат проверяется по CT-логу, а не `curl`: до T-011 проксируемой записи нет и предъявлять
+его некому. `crt.sh` для той же проверки годится, но отвечал 404 и 502 в день приёмки T-001.
 
 Письмо, отправленное на `privacy@dokey.ru`, доходит до ящика пересылки.
 
@@ -66,13 +73,17 @@ curl -sI https://dokey.ru | grep -i 'strict-transport-security'
 
 ## Результат
 
-Заполняется в момент выполнения T-001 — без этих строк проверять нечего.
+Заполнено 2026-09-16 при выполнении T-001. Логинов, кодов и адреса пересылки здесь нет и не будет
+(**D-125** п. 2, **D-162** п. 5).
 
-| Что                               | Значение |
-| --------------------------------- | -------- |
-| Регистратор                       | —        |
-| Дата регистрации                  | —        |
-| Дата истечения                    | —        |
-| NS зоны                           | —        |
-| Дата выдачи TLS                   | —        |
-| Дата заведения `privacy@dokey.ru` | —        |
+| Что                                      | Значение                                              |
+| ---------------------------------------- | ----------------------------------------------------- |
+| Регистратор                              | REG.RU, учётная запись ROLE-03                        |
+| Дата регистрации                         | 2026-08-28                                            |
+| Дата истечения                           | 2027-08-28 — продление на годы вперёд: T-226          |
+| NS зоны                                  | `kellen.ns.cloudflare.com`, `penny.ns.cloudflare.com` |
+| Дата выдачи TLS                          | 2026-09-16, Let's Encrypt через Universal SSL         |
+| Дата заведения `privacy@dokey.ru`        | 2026-09-16, Cloudflare Email Routing                  |
+| `security@dokey.ru`, `conduct@dokey.ru`  | 2026-09-16, там же (T-225)                            |
+| Запрет смены регистратора, автопродление | включены у регистратора (SEC-12)                      |
+| Managed robots.txt Cloudflare            | выключен (**D-164** п. 4)                             |
