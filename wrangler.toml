@@ -7,6 +7,16 @@ compatibility_date = "2026-09-01"
 # инструмент сборки, отправляющий метрики наружу, — плохая шутка (ИНВ-01).
 send_metrics = false
 
+# Прод отвечает только на своём домене. Привязку Custom Domain заводит ROLE-03 один раз в панели
+# Cloudflare — у токена деплоя нет права на маршруты (D-179); здесь она повторена, чтобы адрес
+# прода читался в репозитории, а деплой её не менял.
+routes = [{ pattern = "dokey.ru", custom_domain = true }]
+
+# Второго адреса у прода нет: *.workers.dev и preview-адреса шли бы мимо зоны, мимо домена
+# из ИНТ-09 и мимо редиректа http→https (D-175).
+workers_dev = false
+preview_urls = false
+
 [assets]
 directory = "./dist"
 # Заголовки ответа приходят из dist/_headers, который кладёт туда `pnpm build`
