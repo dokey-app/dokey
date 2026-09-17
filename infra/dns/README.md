@@ -7,7 +7,9 @@
 
 1. Домен `dokey.ru` зарегистрирован, зона делегирована на Cloudflare.
 2. Записи `dokey.ru` и `www.dokey.ru` указывают на Workers-проект `dokey` (см.
-   [wrangler.toml](../../wrangler.toml)).
+   [wrangler.toml](../../wrangler.toml)). Custom Domain `dokey.ru` привязывает ROLE-03 один раз в
+   панели Cloudflare до первого тега, а `wrangler.toml` повторяет привязку: у токена деплоя нет
+   права на маршруты (**D-179**).
 3. TLS выдан и действует; `www` отвечает редиректом на apex.
 4. HSTS отдаётся с продакшн-ответом: `max-age=63072000; includeSubDomains; preload`
    — значение живёт в [infra/headers/\_headers](../headers/_headers), а не в панели провайдера
