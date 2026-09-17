@@ -110,7 +110,7 @@ ENT-21…ENT-30).
 - [x] T-009 — настроить Playwright 1.63.0 и первый сценарий (RUN-03): границы — `playwright.config.ts`, `tests/e2e/smoke.spec.ts`; готово — `pnpm test:e2e`
 - [x] T-010 — описать заголовки ответа единым источником: CSP `'self'` без исключений, HSTS, правила кеша (TECH-02, ИНВ-01): границы — `infra/headers/_headers`; готово — `pnpm check:headers` на `wrangler dev` печатает три заголовка ожидаемого вида
 - [x] T-215 — описать рунбук доступа к четырём учётным записям и двум секретам автоматики (TECH-01, D-162): границы — `infra/access/README.md`, `docs/security-and-access.md` §5.3; готово — в реестре секретов §5.3 нет строки без срока ротации, у каждой из четырёх учётных записей записаны второй фактор и порядок восстановления, `gh api repos/dokey-app/dokey/environments/production` показывает развёртывание только для тегов `v*`
-- [ ] T-011 — задеплоить заглушку на `dokey.ru` через wrangler (TECH-02, ADR-10, D-114, D-162): границы — `wrangler.toml`, `.github/workflows/release.yml`; готово — страница открывается, `curl -sI https://dokey.ru` возвращает ответ хостинга и `strict-transport-security`, заголовки совпадают с `_headers`, токен деплоя — со сроком ≤ 6 месяцев и одним правом `Workers Scripts:Edit`
+- [ ] T-011 — задеплоить заглушку на `dokey.ru` через wrangler (TECH-02, ADR-10, D-114, D-162, D-178, D-179): границы — `wrangler.toml`, `.github/workflows/release.yml`; готово — ROLE-03 привязал `dokey.ru` к Worker'у `dokey` в панели, после тега `v0.0.0` на `main` страница открывается, `curl -sI https://dokey.ru` возвращает ответ хостинга и `strict-transport-security`, заголовки совпадают с `_headers`, токен деплоя — со сроком ≤ 6 месяцев и одним правом `Workers Scripts:Edit`
 - [ ] T-224 — привести `src/README.md` и `scripts/gates/README.md` к Prettier: таблицы в них разошлись с форматтером после 63ab142, и `pnpm format:check` красный на чистом дереве (найдено в T-001 2026-09-16): границы — два файла; готово — `pnpm format:check` зелёный без правки чего-либо ещё
 - [ ] T-228 — устранить зависание RUN-03 на раннере GitHub: `pnpm test:e2e` молчит после `$ playwright test` до отмены, на `main` и в PR #1 одинаково, а у job нет `timeout-minutes`, и GitHub ждёт 6 ч (найдено в T-002 2026-09-17): границы — `tests/e2e/preview-server.ts`, `tests/e2e/preview-teardown.ts`, `playwright.config.ts`, job `e2e` в `.github/workflows/pr.yml`; готово — RUN-03 в PR зелёный за ≤ 10 мин, а зависший прогон job обрывает по таймауту
 - [ ] T-229 — сделать приговор G-01 по Lighthouse mobile устойчивым на раннере GitHub: одна сборка PR #1 дала `categories: 0.88 против 0.95`, а при перезапуске прошла (найдено в T-002 2026-09-17): границы — `lighthouserc.json`, `scripts/gates/lighthouse.ts`; готово — пять подряд перезапусков job «Сборка и гейты» на одном коммите дают один и тот же вердикт G-01; если для этого нужно менять число прогонов или порог (D-100, NFR-04) — сначала Q-NN
@@ -497,7 +497,7 @@ Workbench; неприехавшая логика объясняет себя т�
 
 ### 14.3. Задачи, заблокированные вопросом
 
-Задач с пометкой `⚠ Q-NN` не осталось: последняя, T-002, разблокирована решением D-155.
+Задач с пометкой `⚠ Q-NN` не осталось: последняя, T-011, разблокирована решениями D-178 и D-179 (2026-09-17).
 
 | Задача | Вопрос | Этап |
 |---|---|---|
