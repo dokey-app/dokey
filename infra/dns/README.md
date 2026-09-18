@@ -99,3 +99,4 @@ curl -sI https://dokey.ru | grep -ciE '^(nel|report-to|reporting-endpoints):'   
 | `security@dokey.ru`, `conduct@dokey.ru`  | 2026-09-16, там же (T-225)                            |
 | Запрет смены регистратора, автопродление | включены у регистратора (SEC-12)                      |
 | Managed robots.txt Cloudflare            | выключен (**D-164** п. 4)                             |
+| Network Error Logging Cloudflare         | выключен 2026-09-18 (**D-180**)                       |

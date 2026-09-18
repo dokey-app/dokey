@@ -70,17 +70,17 @@ Rejected:
       `scripts/check-headers.ts`, `tests/unit/check-headers.test.ts`. Проверка:
       `pnpm test:unit && pnpm lint && pnpm format:check && pnpm typecheck`. Коммит
       `T-235: RUN-16 падает на заголовках отчётов (D-180)` на ветке `t-235-nel-off`.
-- [ ] 2. Красный прогон на живом проде, пока NEL ещё включён. Это доказательство, что проверка
+- [x] 2. Красный прогон на живом проде, пока NEL ещё включён. Это доказательство, что проверка
       ловит настоящий ответ, а не только фикстуру. Файлов нет, коммита нет. Проверка:
       `DOKEY_TARGET=https://dokey.ru pnpm check:headers`, ожидается `ПРОВАЛ` с `nel` и
       `report-to` и код 1.
-- [ ] 3. **ROLE-03 (человек)** выключает «Network Error Logging» в панели зоны `dokey.ru`
+- [x] 3. **ROLE-03 (человек)** выключает «Network Error Logging» в панели зоны `dokey.ru`
       (Speed → Settings или Network, в зависимости от версии панели). Агент останавливается и
       ждёт подтверждения. Файлов нет. Проверка:
       `curl -sI https://dokey.ru | grep -ciE '^(nel|report-to|reporting-endpoints):'` → `0`
       на `/`, на `/_astro/<файл>` и на заведомо несуществующем пути (404). Все три пути названы
       в D-180. Если край ещё отдаёт заголовки, повторять до нескольких минут.
-- [ ] 4. Строка в таблице «Результат» и отметка задачи. Файлы: `infra/dns/README.md` (строка
+- [x] 4. Строка в таблице «Результат» и отметка задачи. Файлы: `infra/dns/README.md` (строка
       `| Network Error Logging Cloudflare | выключен 2026-MM-DD (**D-180**) |` после строки Managed
       robots.txt), `docs/tasks.md` (`- [x] T-235`), этот план переезжает в `docs/plans/done/`.
       Проверка: `DOKEY_TARGET=https://dokey.ru pnpm check:headers` зелёный,
