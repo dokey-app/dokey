@@ -81,24 +81,24 @@ Rejected:
 - [x] 3. Чек-лист PR целиком.
       verify: `pnpm lint && pnpm typecheck && pnpm build && pnpm gates`. Про `pnpm format:check`:
       красный до T-224, в диффе расхождений быть не должно. Затем PR и слияние.
-- [ ] 4. **ROLE-03 (вы), до тега.** Порядок — рунбук `infra/access/README.md`, «Ротация токена
+- [x] 4. **ROLE-03 (вы), до тега.** Порядок — рунбук `infra/access/README.md`, «Ротация токена
       деплоя»:
       - выпустить токен: одно право `Account · Workers Scripts · Edit`, срок ≤ 6 месяцев;
       - `gh secret set CLOUDFLARE_API_TOKEN --env production -R dokey-app/dokey`;
       - `gh secret set CLOUDFLARE_ACCOUNT_ID --env production -R dokey-app/dokey`;
       - убедиться, что T-230 уже в `main`.
       verify: `gh api repos/dokey-app/dokey/environments/production/secrets -q '.secrets[].name'` — оба имени
-- [ ] 5. **ROLE-03 (вы), сразу перед тегом (D-179).** В панели Cloudflare создать Worker `dokey`
+- [x] 5. **ROLE-03 (вы), сразу перед тегом (D-179).** В панели Cloudflare создать Worker `dokey`
       из стартового шаблона, затем Settings → Domains & Routes → Custom Domain `dokey.ru`.
       verify: `curl -sI https://dokey.ru | head -1` — ответ стартового Worker'а
-- [ ] 6. Тег `v0.0.0` на `main`: `git tag v0.0.0 && git push origin v0.0.0`, только с
+- [x] 6. Тег `v0.0.0` на `main`: `git tag v0.0.0 && git push origin v0.0.0`, только с
       подтверждения PO в момент шага.
       verify: `gh run watch` — задания «Гейты релиза» и «Прод» зелёные.
       - При отказе на правах маршрута или `workers.dev` — новый Q-NN с журналом, токен не
         расширяется (D-179 п. 4).
       - Провал задания образа не валит T-011, он записывается строкой в tasks.md.
       - Если G-01 не проходит из-за нестабильности — перезапуск (T-229).
-- [ ] 7. Приёмка (ниже) и коммит `T-011: приёмка на проде` с `- [x]` через PR.
+- [x] 7. Приёмка (ниже) и коммит `T-011: приёмка на проде` с `- [x]` через PR.
 
 ## Done when
 

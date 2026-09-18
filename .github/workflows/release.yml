@@ -66,11 +66,21 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # `send_metrics = false` в wrangler.toml не убрал баннер телеметрии в релизе v0.0.0;
+          # переменная окружения выключает её независимо от чтения конфига (ИНВ-01).
+          WRANGLER_SEND_METRICS: 'false'
       # RUN-16: живой origin обязан отдавать ровно то, что объявлено в _headers.
+      # Край Cloudflare переключается на новую версию не мгновенно: в релизе v0.0.0 сверка через
+      # 0,5 с после деплоя увидела прежний Worker, через 40 с — новый. Повторы — до минуты.
       - name: Сверка заголовков прода
         env:
           DOKEY_TARGET: https://dokey.ru
-        run: node --experimental-strip-types scripts/check-headers.ts
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            node --experimental-strip-types scripts/check-headers.ts && exit 0
+            sleep 10
+          done
+          exit 1
 
   image:
     name: Образ, подпись, provenance, SBOM
