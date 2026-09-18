@@ -19,6 +19,10 @@
    страница.
 6. «Managed robots.txt» Cloudflare в зоне **выключен** (**D-164** п. 4): источник `robots.txt` —
    репозиторий, файл выводится на сборке из того же признака индексации, что `noindex`.
+7. «Network Error Logging» Cloudflare в зоне **выключен** (**D-180**): иначе край дописывает к
+   каждому ответу `Report-To` и `NEL`, и браузер посетителя шлёт отчёты на
+   `a.nel.cloudflare.com` — сторонний origin по ИНВ-01. Панель зоны или
+   `PATCH /zones/{zone_id}/settings/nel` со значением `off`.
 
 Зона `.ru` в HSTS preload **не входит**: HTTP закрывают редирект Cloudflare «Always Use HTTPS»,
 заголовок HSTS из `_headers` и подача самого домена в hstspreload.org — задача T-223 (D-175).
@@ -72,6 +76,12 @@ curl -sI https://dokey.ru | grep -i 'strict-transport-security'
 ```
 
 Полную сверку заголовков делает `pnpm check:headers` с `DOKEY_TARGET=https://dokey.ru`.
+
+**T-235 — отчётов NEL на ответах нет (D-180):**
+
+```bash
+curl -sI https://dokey.ru | grep -ciE '^(nel|report-to|reporting-endpoints):'   # 0
+```
 
 ## Результат
 
