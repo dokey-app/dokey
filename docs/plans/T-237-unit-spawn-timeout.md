@@ -77,7 +77,7 @@ Links: RUN-01 · RUN-16 (D-180) · G-02 (D-88, D-156, D-158) · T-236 (разб�
       утверждают по записанному результату, ненаписанный результат бросает: файлы
       `tests/unit/check-headers.test.ts`; verify: `npx vitest run --project unit tests/unit/check-headers.test.ts`
       зелёный, и он же зелёный при восьми счётных процессах на фоне
-- [ ] `gateOn` уходит со `spawnSync` на асинхронный `execFile`, оба прогона гейта — в `beforeAll`
+- [x] `gateOn` уходит со `spawnSync` на асинхронный `execFile`, оба прогона гейта — в `beforeAll`
       блока «граф маршрута» параллельно: файлы `tests/unit/size-gate.test.ts`; verify:
       `npx vitest run --project unit tests/unit/size-gate.test.ts` зелёный при восьми счётных
       процессах на фоне, и в `--reporter=verbose` случай «шрифты критического пути» снова десятки
