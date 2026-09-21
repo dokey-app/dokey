@@ -45,6 +45,54 @@ function fromHeadersFile(text: string): Map<string, string> {
   return found;
 }
 
+interface HeadersRule {
+  path: string;
+  set: Set<string>;
+  unset: Set<string>;
+}
+
+function rulesOf(text: string): HeadersRule[] {
+  const rules: HeadersRule[] = [];
+  for (const line of text.split(/\r?\n/)) {
+    if (line.trim() === '' || line.trimStart().startsWith('#')) continue;
+    if (!/^\s/.test(line)) {
+      rules.push({ path: line.trim(), set: new Set(), unset: new Set() });
+      continue;
+    }
+    const rule = rules.at(-1);
+    if (!rule) continue;
+    const unset = /^\s+!\s*([A-Za-z-]+)\s*$/.exec(line);
+    if (unset) {
+      rule.unset.add((unset[1] ?? '').toLowerCase());
+      continue;
+    }
+    const set = /^\s+([A-Za-z-]+):/.exec(line);
+    if (set) rule.set.add((set[1] ?? '').toLowerCase());
+  }
+  return rules;
+}
+
+// Cloudflare применяет все подходящие правила `_headers` по порядку, и одноимённый заголовок,
+// уже поставленный прошлым правилом, не заменяет, а дописывает через запятую: на проде
+// `/_astro/*` отдавал `public, max-age=0, must-revalidate, public, max-age=31536000, immutable`
+// (T-234). Заменить значение можно только так: `! Name` в частном правиле, затем `Name: …`.
+// Проверка статическая, чтобы склейка ловилась на сборке, а не на проде.
+function concatenated(text: string): string[] {
+  const rules = rulesOf(text);
+  const base = rules.find((rule) => rule.path === '/*');
+  if (!base) return [];
+  const problems: string[] = [];
+  for (const rule of rules) {
+    if (rule === base) continue;
+    for (const name of rule.set) {
+      if (base.set.has(name) && !rule.unset.has(name)) {
+        problems.push(`${rule.path}: ${name} склеится со значением из /* — нет «! ${name}»`);
+      }
+    }
+  }
+  return problems;
+}
+
 function fromNginxConf(text: string): Map<string, string> {
   const found = new Map<string, string>();
   for (const match of text.matchAll(/add_header\s+([A-Za-z-]+)\s+"([^"]*)"/g)) {
@@ -82,10 +130,12 @@ export const gate: Gate = {
     if (right.get(PROD_ONLY) !== undefined) {
       problems.push(`${PROD_ONLY}: стоит в ${NGINX}, хотя это заголовок прода (D-150)`);
     }
+    problems.push(...concatenated(headersText));
 
     if (problems.length > 0) return fail(problems.join('; '));
     return pass(
-      `${CHECKED.length} заголовков совпадают в обеих копиях, ${PROD_ONLY} — только на проде`,
+      `${CHECKED.length} заголовков совпадают в обеих копиях, ${PROD_ONLY} — только на проде, ` +
+        `частные правила ${HEADERS} заменяют заголовки /* , а не дописывают`,
     );
   },
 };
