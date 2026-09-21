@@ -46,7 +46,7 @@ Rejected:
   --port 8788` и `curl -sI` на `/`, `/_astro/<файл из dist>`, `/sw.js` (если в `dist` есть),
   `/robots.txt` — у каждого ровно одна строка `cache-control` с одним значением; CSP и прочий
   набор из `/*` на `/_astro/*` на месте
-- [ ] Приёмка и отметка: files `docs/tasks.md`; verify: чек-лист
+- [x] Приёмка и отметка: files `docs/tasks.md`; verify: чек-лист
   `.github/pull_request_template.md` целиком (`pnpm lint`, `format:check`, `typecheck`,
   `test:unit`, `pnpm gates`), коммит `T-234: …` с `- [x]`, PR
 
