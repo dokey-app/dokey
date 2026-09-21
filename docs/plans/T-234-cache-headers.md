@@ -41,7 +41,7 @@ Rejected:
 - [x] Проверка склейки в гейте — сначала красная: files `scripts/gates/headers-parity.ts`;
   verify: `pnpm gate:headers-parity` — `fail` с четырьмя правилами × `cache-control` на
   текущем `_headers`
-- [ ] Отсоединение в правилах и исправленный комментарий: files `infra/headers/_headers`;
+- [x] Отсоединение в правилах и исправленный комментарий: files `infra/headers/_headers`;
   verify: `pnpm gate:headers-parity` зелёный; `pnpm build`, затем `pnpm exec wrangler dev
   --port 8788` и `curl -sI` на `/`, `/_astro/<файл из dist>`, `/sw.js` (если в `dist` есть),
   `/robots.txt` — у каждого ровно одна строка `cache-control` с одним значением; CSP и прочий
