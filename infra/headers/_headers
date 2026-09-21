@@ -16,19 +16,25 @@
   Cache-Control: public, max-age=0, must-revalidate
 
 # Ассеты с хешем в имени — длинный TTL и immutable (architecture §5, строка «Ответы хостинга»).
-# Правила ниже НЕ отменяют набор из /* : Cloudflare применяет все подходящие правила и
-# переопределяет только одноимённые заголовки. В nginx правило обратное — там `add_header`
+# Правила ниже НЕ отменяют набор из /* : Cloudflare применяет все подходящие правила по
+# порядку, и одноимённый заголовок не переопределяет, а дописывает через запятую. Поэтому
+# частное правило сначала отсоединяет унаследованный Cache-Control строкой `! Cache-Control`
+# и только потом ставит свой (T-234). В nginx правило обратное — там `add_header`
 # на вложенном уровне снимает весь набор уровня выше, поэтому вторая копия политики
 # обходится без блоков location и задаёт кеш через map (см. infra/docker/nginx.conf).
 /_astro/*
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
 /fonts/*
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
 # Service worker и robots ревалидируются всегда.
 /sw.js
+  ! Cache-Control
   Cache-Control: no-cache
 
 /robots.txt
+  ! Cache-Control
   Cache-Control: public, max-age=3600
