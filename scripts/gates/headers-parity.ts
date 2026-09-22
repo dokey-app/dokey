@@ -128,15 +128,131 @@ export function outsideRoot(text: string): string[] {
   return problems;
 }
 
-function fromNginxConf(text: string): Map<string, string> {
+interface NginxDirective {
+  // Цепочка блоков, в которых стоит директива: `['http', 'server', 'location = /sw.js']`.
+  blocks: string[];
+  words: string[];
+}
+
+// Не парсер nginx, а ровно столько, сколько нужно, чтобы знать блок директивы: слова, `;`, `{`,
+// `}`, комментарий `#` с начала слова до конца строки и строки в кавычках, внутри которых
+// `;`, `#` и скобки — текст (в CSP точки с запятой есть всегда).
+function nginxDirectives(text: string): {
+  directives: NginxDirective[];
+  servers: number;
+  broken: boolean;
+} {
+  const directives: NginxDirective[] = [];
+  const blocks: string[] = [];
+  let words: string[] = [];
+  let word = '';
+  let inWord = false;
+  let servers = 0;
+  let broken = false;
+  const flush = (): void => {
+    if (inWord) words.push(word);
+    word = '';
+    inWord = false;
+  };
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i] ?? '';
+    if ((c === '"' || c === "'") && !inWord) {
+      let j = i + 1;
+      while (j < text.length && text[j] !== c) {
+        const next = text[j + 1] ?? '';
+        if (text[j] === '\\' && (next === c || next === '\\')) {
+          word += next;
+          j += 2;
+          continue;
+        }
+        word += text[j];
+        j++;
+      }
+      if (j >= text.length) broken = true;
+      inWord = true;
+      i = j;
+    } else if (c === '#' && !inWord) {
+      while (i < text.length && text[i] !== '\n') i++;
+    } else if (/\s/.test(c)) {
+      flush();
+    } else if (c === ';') {
+      flush();
+      if (words.length > 0) directives.push({ blocks: [...blocks], words });
+      words = [];
+    } else if (c === '{') {
+      flush();
+      const block = words.join(' ');
+      if (block === 'server') servers++;
+      blocks.push(block);
+      words = [];
+    } else if (c === '}') {
+      flush();
+      if (words.length > 0 || blocks.length === 0) broken = true;
+      blocks.pop();
+      words = [];
+    } else {
+      word += c;
+      inWord = true;
+    }
+  }
+  flush();
+  if (words.length > 0 || blocks.length > 0) broken = true;
+  return { directives, servers, broken };
+}
+
+function addHeaders(text: string): { blocks: string[]; key: string; value: string }[] {
+  return nginxDirectives(text)
+    .directives.filter((d) => d.words[0] === 'add_header' && d.words.length >= 3)
+    .map((d) => ({
+      blocks: d.blocks,
+      key: (d.words[1] ?? '').toLowerCase(),
+      value: d.words[2] ?? '',
+    }));
+}
+
+// Значения берутся только с уровня `server`: `add_header` во вложенном блоке действует лишь на
+// его пути, а с уровня `http` не наследуется, как только в `server` есть свой `add_header` —
+// CSP из одного `location = /sw.js` иначе сходила за CSP всего сайта (T-243).
+export function fromNginxConf(text: string): Map<string, string> {
   const found = new Map<string, string>();
-  for (const match of text.matchAll(/add_header\s+([A-Za-z-]+)\s+"([^"]*)"/g)) {
-    const [, name = '', value = ''] = match;
-    const key = name.toLowerCase();
+  for (const { blocks, key, value } of addHeaders(text)) {
+    if (blocks.at(-1) !== 'server') continue;
     if (!WANTED.has(key) || found.has(key)) continue;
     found.set(key, normalize(value));
   }
   return found;
+}
+
+// `add_header` во вложенном блоке снимает ВЕСЬ набор уровня `server` с путей этого блока (D-107),
+// поэтому проблема — любой такой заголовок, а не только сверяемый: `Cache-Control` в
+// `location /_astro/` оставил бы ассеты без CSP. Кеш задаётся через `map` на уровне `server`.
+// Блоков `server` ровно один: набор сверяется в одном, второй шёл бы без проверки, а решать,
+// какой из них «главный», гейт не берётся.
+export function outsideServer(text: string): string[] {
+  const { servers, broken } = nginxDirectives(text);
+  const problems: string[] = [];
+  if (broken) problems.push(`${NGINX}: скобки или кавычки не сбалансированы — блоки не разобраны`);
+  if (servers === 0)
+    problems.push(`${NGINX}: нет блока server — набор заголовков сверять не с чем`);
+  if (servers > 1) {
+    problems.push(
+      `${NGINX}: блоков server — ${servers}, а набор сверяется в одном; остальные идут без проверки`,
+    );
+  }
+  for (const { blocks, key } of addHeaders(text)) {
+    const server = blocks.lastIndexOf('server');
+    if (server === -1) {
+      if (!WANTED.has(key)) continue;
+      problems.push(
+        `${blocks.join(' > ') || 'main'}: ${key} задан вне уровня server — в nginx набор один, на уровне server`,
+      );
+    } else if (server < blocks.length - 1) {
+      problems.push(
+        `${blocks.slice(server + 1).join(' > ')}: add_header ${key} внутри блока — снимает набор уровня server, путь идёт без сверяемых заголовков`,
+      );
+    }
+  }
+  return problems;
 }
 
 export const gate: Gate = {
@@ -165,12 +281,14 @@ export const gate: Gate = {
     if (right.get(PROD_ONLY) !== undefined) {
       problems.push(`${PROD_ONLY}: стоит в ${NGINX}, хотя это заголовок прода (D-150)`);
     }
+    problems.push(...outsideServer(nginxText));
     problems.push(...outsideRoot(headersText));
     problems.push(...concatenated(headersText));
 
     if (problems.length > 0) return fail(problems.join('; '));
     return pass(
-      `${CHECKED.length} заголовков правила /* совпадают в обеих копиях, вне /* не заданы и не сняты, ` +
+      `${CHECKED.length} заголовков правила /* и уровня server совпадают в обеих копиях, ` +
+        `вне /* не заданы и не сняты, во вложенных блоках nginx add_header нет, ` +
         `${PROD_ONLY} — только на проде, ` +
         `частные правила ${HEADERS} заменяют заголовки /* , а не дописывают`,
     );
