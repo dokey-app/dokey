@@ -60,6 +60,13 @@ describe('RUN-16: сверяемые заголовки _headers — тольк�
     expect(outsideRoot(text)).toHaveLength(1);
   });
 
+  it('одиночное «! Name» в частном правиле снимает CSP с пути — проблема', () => {
+    const text = ['/*', csp, '', '/sw.js', '  ! Content-Security-Policy'].join('\n');
+    expect(outsideRoot(text)).toEqual([
+      '/sw.js: content-security-policy снят вне /* — путь идёт без него, в nginx набор один на все пути',
+    ]);
+  });
+
   it('Cache-Control в частных правилах не сверяется', () => {
     const text = '/*\n  Cache-Control: a\n\n/sw.js\n  ! Cache-Control\n  Cache-Control: b\n';
     expect(outsideRoot(text)).toEqual([]);

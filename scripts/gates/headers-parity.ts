@@ -107,14 +107,21 @@ export function concatenated(text: string): string[] {
 
 // Сверяемый заголовок в частном правиле — расхождение с nginx по построению: образ ставит набор
 // один раз на уровне `server`, а Cloudflare отдал бы этому пути своё значение (или только его).
+// Одиночное `! Name` без повторной установки — то же расхождение: Cloudflare снимает заголовок
+// с этого пути, а nginx его оставляет.
 // `Cache-Control` не сверяется и частными правилами переопределяется законно (T-234).
 export function outsideRoot(text: string): string[] {
   const problems: string[] = [];
   for (const rule of rulesOf(text)) {
     if (rule.path === '/*') continue;
-    for (const name of rule.set) {
-      if (WANTED.has(name)) {
+    for (const name of new Set([...rule.set, ...rule.unset])) {
+      if (!WANTED.has(name)) continue;
+      if (rule.set.has(name)) {
         problems.push(`${rule.path}: ${name} задан вне /* — в nginx набор один на все пути`);
+      } else {
+        problems.push(
+          `${rule.path}: ${name} снят вне /* — путь идёт без него, в nginx набор один на все пути`,
+        );
       }
     }
   }
@@ -163,7 +170,7 @@ export const gate: Gate = {
 
     if (problems.length > 0) return fail(problems.join('; '));
     return pass(
-      `${CHECKED.length} заголовков правила /* совпадают в обеих копиях и вне /* не заданы, ` +
+      `${CHECKED.length} заголовков правила /* совпадают в обеих копиях, вне /* не заданы и не сняты, ` +
         `${PROD_ONLY} — только на проде, ` +
         `частные правила ${HEADERS} заменяют заголовки /* , а не дописывают`,
     );
