@@ -45,7 +45,7 @@ Rejected:
 - `infra/headers/*`, `infra/docker/nginx.conf`, `astro.config.mjs` — факт верен, не меняется.
 
 ## Steps
-- [ ] Путь ЭП-06 в api-spec: files `docs/api-spec.md` (§4.0 строка ЭП-06, §4.6 заголовок
+- [x] Путь ЭП-06 в api-spec: files `docs/api-spec.md` (§4.0 строка ЭП-06, §4.6 заголовок
   операции и строка «Назначение» — чанк, стиль, спрайт в `/_astro/`, шрифт в `/fonts/`), правка
   инструментом Edit, не `sed`. В ячейку «Метод и путь» §4.0 идут **оба** пути —
   `GET /_astro/{name}.{hash}.{ext}` и `GET /fonts/{семейство}-{начертание}.{hash}.woff2`: T-245
