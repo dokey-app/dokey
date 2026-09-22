@@ -18,10 +18,19 @@ env:
   NODE_VERSION: '24'
   PNPM_VERSION: '12.3.4'
 
+# Потолок времени есть у каждого job: без `timeout-minutes` зависший прогон держит раннер
+# 6 часов умолчания GitHub (T-228 — RUN-03, T-244 — остальные пять). Значения — не круглые
+# числа с потолка, а запас к худшему зелёному прогону из сорока последних (pr.yml, сентябрь
+# 2026): линт 27 с, типы 31 с, RUN-01 20+9 с, RUN-02 77 с, e2e 86 с, сборка и гейты 107 с.
+# Запас ~10x на лёгких job'ах и ~6x на тяжёлых переживает холодный кеш pnpm, загрузку
+# браузера Playwright и медленный раннер, но обрывает зависание за минуты, а не за часы.
+# Правило машинное: `tests/unit/workflow-timeouts.test.ts` (RUN-01) валит новый job без потолка.
 jobs:
   lint:
     name: Линт и формат
     runs-on: ubuntu-latest
+    # Худший зелёный — 27 с: oxlint и Prettier по дереву, сети после установки нет.
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -38,6 +47,8 @@ jobs:
   typecheck:
     name: Типы
     runs-on: ubuntu-latest
+    # Худший зелёный — 31 с: `astro sync` и tsc; растёт с числом маршрутов, не с сетью.
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -53,6 +64,9 @@ jobs:
   unit:
     name: RUN-01 unit
     runs-on: ubuntu-latest
+    # Худший зелёный — 29 с. Случаи поднимают дочерние процессы и на загруженной машине
+    # идут дольше (T-238, T-241), поэтому запас не срезан к минуте.
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -68,6 +82,9 @@ jobs:
   integration:
     name: RUN-02 browser mode
     runs-on: ubuntu-latest
+    # Худший зелёный — 77 с, и почти всё это `playwright install --with-deps chromium`:
+    # загрузка браузера зависит от сети, поэтому потолок тот же, что у e2e, — 10 мин.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -110,6 +127,10 @@ jobs:
   build:
     name: Сборка и гейты
     runs-on: ubuntu-latest
+    # Худший зелёный — 107 с, самый долгий job конвейера. Гейты включаются по мере
+    # появления предмета (сейчас исполняются не все четырнадцать), поэтому запас взят
+    # с ростом: 10 мин — как у e2e и RUN-02.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
