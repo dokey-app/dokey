@@ -1,22 +1,28 @@
 import { glob, readFile } from 'node:fs/promises';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 // RUN-01. Структура документов: markdown, который рендерится не тем, чем написан.
 // Оба правила ловят повреждения, возникающие при правке абзацев и таблиц скриптом:
 // съеденная пустая строка меняет смысл разметки молча, и в исходнике это не видно.
 
-async function docs(): Promise<{ path: string; lines: string[] }[]> {
-  const files: { path: string; lines: string[] }[] = [];
-  for await (const path of glob('docs/**/*.md')) {
-    files.push({ path, lines: (await readFile(path, 'utf8')).split(/\r?\n/) });
-  }
-  return files;
-}
+// Все файлы `docs/**/*.md` (80 штук, ≈ 2 МБ) читаются один раз на файл тестов, а не на
+// случай: чтение на каждый случай упиралось в таймаут 5 с на холодном дереве (T-238).
+let docs: { path: string; lines: string[] }[] = [];
+
+beforeAll(async () => {
+  const paths: string[] = [];
+  for await (const path of glob('docs/**/*.md')) paths.push(path);
+  docs = await Promise.all(
+    paths.map(async (path) => ({ path, lines: (await readFile(path, 'utf8')).split(/\r?\n/) })),
+  );
+  // Пустая выборка прошла бы оба правила молча: «пусто» за «проверено» не выдаётся.
+  if (docs.length === 0) throw new Error('docs/**/*.md: не найдено ни одного файла');
+}, 30_000);
 
 describe('структура документов', () => {
-  it('не превращает абзац в заголовок: перед `---` стоит пустая строка', async () => {
+  it('не превращает абзац в заголовок: перед `---` стоит пустая строка', () => {
     const broken: string[] = [];
-    for (const { path, lines } of await docs()) {
+    for (const { path, lines } of docs) {
       // Закрывающий `---` фронтматтера стоит вплотную к последнему полю — это не разметка.
       const frontmatter = lines[0] === '---' ? lines.indexOf('---', 1) : -1;
       lines.forEach((line, index) => {
@@ -30,9 +36,9 @@ describe('структура документов', () => {
     expect(broken).toEqual([]);
   });
 
-  it('не оставляет строк таблицы вне таблицы', async () => {
+  it('не оставляет строк таблицы вне таблицы', () => {
     const broken: string[] = [];
-    for (const { path, lines } of await docs()) {
+    for (const { path, lines } of docs) {
       lines.forEach((line, index) => {
         if (!line.startsWith('|')) return;
         const previous = lines[index - 1];
