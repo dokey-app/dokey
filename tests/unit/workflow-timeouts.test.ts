@@ -5,6 +5,13 @@ import { describe, expect, it } from 'vitest';
 // сутки напролёт (T-228 — RUN-03, T-244 — остальные пять job'ов `pr.yml`). Правило машинное,
 // чтобы новый job без потолка ловился на месте, а не через шесть часов тишины.
 
+// Хвостовой комментарий YAML отделён пробелом: `#` вплотную к значению — часть скаляра.
+// Ведущий комментарий сюда не доходит, такие строки пропущены раньше.
+function withoutComment(line: string): string {
+  const at = line.search(/\s#/);
+  return (at === -1 ? line : line.slice(0, at)).trimEnd();
+}
+
 // Разбор фиксированной грамматики workflow, а не YAML вообще: ключ job — ровно два пробела
 // отступа под `jobs:` на нулевом уровне, `timeout-minutes` job'а — ровно четыре. Глубже
 // (шаги, блочные скаляры `run: |`) не считается: у шага свой `timeout-minutes`, и он раннер
@@ -18,26 +25,35 @@ export function jobsWithoutTimeout(text: string): string[] {
   const problems: string[] = [];
   let current: string | undefined;
   let covered = false;
+  let seen = false;
   const close = () => {
     if (current !== undefined && !covered) problems.push(`${current}: нет timeout-minutes`);
+    current = undefined;
+    covered = false;
   };
 
   for (const line of lines.slice(start + 1)) {
     if (line.trim() === '' || line.trimStart().startsWith('#')) continue;
     // Строка нулевого уровня закрывает блок jobs: дальше уже другой ключ workflow.
     if (!line.startsWith(' ')) break;
-    const job = /^ {2}([A-Za-z_][\w-]*):\s*$/.exec(line);
-    if (job) {
+    // Ровно два пробела — уровень ключей job, другого содержимого на нём не бывает. Строка,
+    // не разобранная как ключ, закрывает предыдущий job и сама идёт в проблемы: иначе
+    // непонятый job наследовал бы чужой потолок и проходил молча.
+    if (line.startsWith('  ') && !line.startsWith('   ')) {
       close();
-      current = job[1];
-      covered = false;
+      seen = true;
+      const job = /^ {2}([A-Za-z_][\w-]*):$/.exec(withoutComment(line));
+      if (job) current = job[1];
+      else problems.push(`нераспознанный ключ job: ${line.trim()}`);
       continue;
     }
-    if (/^ {4}timeout-minutes: *\d+\s*$/.test(line)) covered = true;
+    // Значение потолка бывает в кавычках и выражением `${{ … }}`; пустое значение — не потолок.
+    const timeout = /^ {4}timeout-minutes:(.*)$/.exec(withoutComment(line));
+    if (timeout?.[1]?.trim()) covered = true;
   }
   close();
 
-  if (current === undefined) return ['блок jobs: пуст — проверять нечего'];
+  if (!seen) return ['блок jobs: пуст — проверять нечего'];
   return problems;
 }
 
@@ -78,6 +94,72 @@ describe('потолок времени job в pr.yml', () => {
       '  contents: read',
     ].join('\n');
     expect(jobsWithoutTimeout(text)).toEqual(['build: нет timeout-minutes']);
+  });
+
+  // Ключ job, не подошедший под грамматику, молча наследовал потолок соседа сверху: непонятый
+  // job проходил проверку. Ожидания сверены с js-yaml 4.3.2 — он на всех трёх видит job.
+  it('ключ job в кавычках не прячется за потолком соседа', () => {
+    const text = [
+      'jobs:',
+      '  lint:',
+      '    timeout-minutes: 5',
+      '    steps:',
+      '      - run: x',
+      '  "build":',
+      '    steps:',
+      '      - run: y',
+    ].join('\n');
+    expect(jobsWithoutTimeout(text)).toEqual(['нераспознанный ключ job: "build":']);
+  });
+
+  it('ключ job с цифры не прячется за потолком соседа', () => {
+    const text = [
+      'jobs:',
+      '  lint:',
+      '    timeout-minutes: 5',
+      '    steps:',
+      '      - run: x',
+      '  2fa:',
+      '    steps:',
+      '      - run: y',
+    ].join('\n');
+    expect(jobsWithoutTimeout(text)).toEqual(['нераспознанный ключ job: 2fa:']);
+  });
+
+  it('хвостовой комментарий у ключа job не прячет job', () => {
+    const text = [
+      'jobs:',
+      '  lint:',
+      '    timeout-minutes: 5',
+      '    steps:',
+      '      - run: x',
+      '  build: # сборка',
+      '    steps:',
+      '      - run: y',
+    ].join('\n');
+    expect(jobsWithoutTimeout(text)).toEqual(['build: нет timeout-minutes']);
+  });
+
+  // Файл насыщен комментариями, а значение потолка бывает и в кавычках, и выражением:
+  // на всех этих формах js-yaml видит потолок, значит видит и проверка.
+  it('потолок засчитывается с комментарием, в кавычках и выражением', () => {
+    for (const value of ['5 # запас', '"5"', "'5'", '${{ fromJSON(env.LIMIT) }}']) {
+      const text = [
+        'jobs:',
+        '  lint:',
+        `    timeout-minutes: ${value}`,
+        '    steps:',
+        '      - run: x',
+      ].join('\n');
+      expect(jobsWithoutTimeout(text), value).toEqual([]);
+    }
+  });
+
+  it('ключ timeout-minutes без значения — не потолок', () => {
+    const text = ['jobs:', '  lint:', '    timeout-minutes:', '    steps:', '      - run: x'].join(
+      '\n',
+    );
+    expect(jobsWithoutTimeout(text)).toEqual(['lint: нет timeout-minutes']);
   });
 
   it('файл без блока jobs — проблема, а не пустой список', () => {
