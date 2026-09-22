@@ -5,14 +5,23 @@ import { spawnSync } from 'node:child_process';
 // `webServer` Playwright здесь не годится: `astro preview` в Astro 7 уходит в фоновый
 // процесс и отпускает свой — Playwright считает такой сервер упавшим, а порт остаётся
 // занятым после прогона. Поэтому сервер поднимается и гасится явно, штатными командами
-// каркаса `astro preview` и `astro preview stop`.
+// каркаса `astro preview --background` и `astro preview stop`.
+//
+// `--background` обязателен (T-228): без флага Astro уходит в фон, только если узнал
+// агента по окружению (`am-i-vibing`, например `CLAUDECODE`). На раннере GitHub агента
+// нет — сервер остаётся на переднем плане, и `spawnSync` ждёт его выхода вечно.
+// Потолок `SPAWN_TIMEOUT_MS` не даёт повиснуть и тогда, когда команда всё же не вернулась.
 export const PORT = 4321;
 export const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 const ASTRO = './node_modules/astro/bin/astro.mjs';
+export const SPAWN_TIMEOUT_MS = 60_000;
 
-function astro(...args: string[]) {
-  return spawnSync(process.execPath, [ASTRO, 'preview', ...args], { encoding: 'utf8' });
+export function astroPreview(...args: string[]) {
+  return spawnSync(process.execPath, [ASTRO, 'preview', ...args], {
+    encoding: 'utf8',
+    timeout: SPAWN_TIMEOUT_MS,
+  });
 }
 
 async function reachable(): Promise<boolean> {
@@ -25,10 +34,11 @@ async function reachable(): Promise<boolean> {
 }
 
 export default async function globalSetup(): Promise<void> {
-  astro('stop');
-  const start = astro('--port', String(PORT), '--host', '127.0.0.1');
+  astroPreview('stop');
+  const start = astroPreview('--background', '--port', String(PORT), '--host', '127.0.0.1');
   if (start.status !== 0) {
-    throw new Error(`astro preview не поднялся: ${start.stderr || start.stdout}`);
+    const why = start.error ? String(start.error) : start.stderr || start.stdout;
+    throw new Error(`astro preview не поднялся: ${why}`);
   }
 
   const deadline = Date.now() + 60_000;

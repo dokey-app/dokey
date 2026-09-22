@@ -84,6 +84,9 @@ jobs:
   e2e:
     name: RUN-03 e2e
     runs-on: ubuntu-latest
+    # Потолок = «готово» T-228: зелёный прогон укладывается в 10 мин (обычно ~2), а
+    # зависший обрывается здесь, а не через 6 ч умолчания GitHub.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
