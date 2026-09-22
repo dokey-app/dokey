@@ -15,6 +15,16 @@ function withoutComment(line: string): string {
   return (at === -1 ? line : line.slice(0, at)).trimEnd();
 }
 
+// Потолок даёт только значение, из которого GitHub получит число: целое или дробное, в кавычках
+// или без, и выражение `${{ … }}`, разворачиваемое в число на прогоне. Пустое значение — не одна
+// форма, а шесть: `null`, `Null`, `NULL`, `~`, `''`, `""` и вовсе ничего дают у js-yaml 4.3.2
+// `null` или пустую строку. Перечень пустых форм закрывал бы найденное, а не класс, поэтому
+// список белый: всё, из чего числа не выходит (`abc`, `5m`, `false`, `[]`, `-5`), — не потолок.
+function isCeiling(value: string): boolean {
+  const scalar = /^(["'])(.*)\1$/.exec(value)?.[2] ?? value;
+  return /^\d+(\.\d+)?$/.test(scalar) || /^\$\{\{.+\}\}$/.test(scalar);
+}
+
 // Разбор фиксированной грамматики workflow, а не YAML вообще: ключ job — ровно два пробела
 // отступа под `jobs:` на нулевом уровне, `timeout-minutes` job'а — ровно четыре. Глубже
 // (шаги, блочные скаляры `run: |`) не считается: у шага свой `timeout-minutes`, и он раннер
@@ -50,9 +60,10 @@ export function jobsWithoutTimeout(text: string): string[] {
       else problems.push(`нераспознанный ключ job: ${line.trim()}`);
       continue;
     }
-    // Значение потолка бывает в кавычках и выражением `${{ … }}`; пустое значение — не потолок.
-    const timeout = /^ {4}timeout-minutes:(.*)$/.exec(withoutComment(line));
-    if (timeout?.[1]?.trim()) covered = true;
+    // Значение отделено от ключа пробелом: `timeout-minutes:5` — не пара ключ-значение, на нём
+    // падает и js-yaml, и GitHub, так что потолка эта строка не даёт.
+    const timeout = /^ {4}timeout-minutes:(?:[ \t](.*))?$/.exec(withoutComment(line));
+    if (timeout && isCeiling((timeout[1] ?? '').trim())) covered = true;
   }
   close();
 
@@ -144,9 +155,10 @@ describe('потолок времени job в workflow', () => {
   });
 
   // Файл насыщен комментариями, а значение потолка бывает и в кавычках, и выражением:
-  // на всех этих формах js-yaml видит потолок, значит видит и проверка.
+  // на всех этих формах js-yaml видит потолок, значит видит и проверка. `0` — тоже число, и
+  // потолок он даёт; разумен ли он — предмет ревью значения, а не этой проверки.
   it('потолок засчитывается с комментарием, в кавычках и выражением', () => {
-    for (const value of ['5 # запас', '"5"', "'5'", '${{ fromJSON(env.LIMIT) }}']) {
+    for (const value of ['5 # запас', '"5"', "'5'", '${{ fromJSON(env.LIMIT) }}', '0']) {
       const text = [
         'jobs:',
         '  lint:',
@@ -158,8 +170,58 @@ describe('потолок времени job в workflow', () => {
     }
   });
 
-  it('ключ timeout-minutes без значения — не потолок', () => {
-    const text = ['jobs:', '  lint:', '    timeout-minutes:', '    steps:', '      - run: x'].join(
+  // Пустое значение бывает не только пропущенным: `null`, `Null`, `NULL`, `~`, `''`, `""` — то
+  // же «ничего» YAML, и js-yaml 4.3.2 на всех даёт `null` или пустую строку. Числа GitHub из
+  // них не получит, потолка нет ни в одной форме (T-250).
+  it('пустое значение в любой форме — не потолок', () => {
+    const suffixes = [
+      '',
+      ' ',
+      '\t',
+      ' null',
+      ' Null',
+      ' NULL',
+      ' ~',
+      " ''",
+      ' ""',
+      " ' '",
+      ' # потом',
+    ];
+    for (const suffix of suffixes) {
+      const text = [
+        'jobs:',
+        '  lint:',
+        `    timeout-minutes:${suffix}`,
+        '    steps:',
+        '      - run: x',
+      ].join('\n');
+      expect(jobsWithoutTimeout(text), JSON.stringify(suffix)).toEqual([
+        'lint: нет timeout-minutes',
+      ]);
+    }
+  });
+
+  // Перечень пустых форм закрыл бы найденное, а не класс: числа не выходит и из `abc`, `5m`,
+  // `false`, `[]`, `-5` — js-yaml даёт строку, булево, список и отрицательное число, а GitHub
+  // такой workflow отвергает. Потолком считается только то, что читается числом или `${{ … }}`.
+  it('значение, из которого не выходит числа, — не потолок', () => {
+    for (const value of ['abc', '5m', 'false', '[]', '-5']) {
+      const text = [
+        'jobs:',
+        '  lint:',
+        `    timeout-minutes: ${value}`,
+        '    steps:',
+        '      - run: x',
+      ].join('\n');
+      expect(jobsWithoutTimeout(text), value).toEqual(['lint: нет timeout-minutes']);
+    }
+  });
+
+  // `timeout-minutes:5` без пробела — не пара ключ-значение: js-yaml 4.3.2 на таком файле падает
+  // («bad indentation of a mapping entry»), и GitHub workflow не запустит. Потолка в файле нет,
+  // и проверка это говорит, а не молчит из-за строки, похожей на значение.
+  it('значение без пробела после двоеточия — не потолок', () => {
+    const text = ['jobs:', '  lint:', '    timeout-minutes:5', '    steps:', '      - run: x'].join(
       '\n',
     );
     expect(jobsWithoutTimeout(text)).toEqual(['lint: нет timeout-minutes']);
