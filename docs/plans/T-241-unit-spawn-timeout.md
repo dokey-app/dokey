@@ -2,7 +2,7 @@
 
 ## Request
 
-- [ ] T-241 — уложить в таймаут Vitest два остальных случая `tests/unit`: `size-gate.test.ts` и `check-headers.test.ts` поднимают на случай по дочернему процессу и при загруженной машине выходят за 5 с — падает то один случай, то другой, а на свободной машине оба зелёные (найдено в T-238 2026-09-20): границы — `tests/unit/size-gate.test.ts`, `tests/unit/check-headers.test.ts`; готово — `pnpm test:unit` зелёный три прогона подряд при занятых ядрах
+- [x] T-241 — уложить в таймаут Vitest два остальных случая `tests/unit`: `size-gate.test.ts` и `check-headers.test.ts` поднимают на случай по дочернему процессу и при загруженной машине выходят за 5 с — падает то один случай, то другой, а на свободной машине оба зелёные (найдено в T-238 2026-09-20): границы — `tests/unit/size-gate.test.ts`, `tests/unit/check-headers.test.ts`; готово — `pnpm test:unit` зелёный три прогона подряд при занятых ядрах
 
 Links: RUN-01 · RUN-16 (D-180) · G-02 (D-88, D-156, D-158) · T-238 (разблокируется этой задачей)
 
@@ -82,7 +82,7 @@ Links: RUN-01 · RUN-16 (D-180) · G-02 (D-88, D-156, D-158) · T-238 (разб�
       `npx vitest run --project unit tests/unit/size-gate.test.ts` зелёный при восьми счётных
       процессах на фоне, и в `--reporter=verbose` случай «шрифты критического пути» снова десятки
       миллисекунд, а не десятки секунд
-- [ ] Приёмка и отметка `- [x] T-241` в `docs/tasks.md`: файлы `docs/tasks.md`; verify:
+- [x] Приёмка и отметка `- [x] T-241` в `docs/tasks.md`: файлы `docs/tasks.md`; verify:
       `pnpm test:unit` зелёный три прогона подряд при восьми занятых ядрах, плюс `pnpm lint`,
       `pnpm format:check`, `pnpm typecheck` по чек-листу `.github/pull_request_template.md`
 
