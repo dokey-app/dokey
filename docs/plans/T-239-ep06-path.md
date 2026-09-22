@@ -64,7 +64,7 @@ Rejected:
   долге вне границ — `docs/open-questions.md:36` «Принятые решения: … D-01…D-179» отстала от
   decisions (D-180, D-181, D-182); verify: `grep -n "redocly" docs/tasks.md` пусто,
   `grep -n "T-246" docs/tasks.md` находит одну строку формата соседних
-- [ ] Приёмка: files — нет (`- [x]` и строку журнала ставит ship); verify: чек-лист
+- [x] Приёмка: files — нет (`- [x]` и строку журнала ставит ship); verify: чек-лист
   `.github/pull_request_template.md` целиком (`pnpm lint`, `format:check`, `typecheck`,
   `test:unit`), команда графы «готово»: `grep -rn "/assets/" docs/api-spec.md` пусто
 
@@ -78,6 +78,13 @@ Rejected:
   оркестратора; `docs/openapi.yaml` и `.claude/settings.json` по-прежнему не трогаются.
 - Строка про пропущенный в таблице Q-245 не заводится: это не предмет T-239.
 - Шаг приёмки больше не ставит `- [x]` и строку журнала — их пишет ship.
+- `pnpm format:check` красный на чистом дереве и до этой задачи: Prettier ругается на шестнадцать
+  файлов лесов оркестратора (`.orchestrator/`, `orchestrator/`, `.claude/commands/orchestrate.md`),
+  которые не отслеживаются git и не внесены в `.prettierignore`. Диффа задачи это не касается:
+  Prettier по отслеживаемым файлам (`git ls-files -z | xargs -0 … --check --ignore-unknown`)
+  зелёный. Вынесено в BUGS оркестратору, здесь не чинится.
+- `pnpm gates` по предмету не запускался: диффа в предмете гейтов нет — правятся только документы,
+  ни один гейт `scripts/gates/*` их не читает.
 
 ## Done when
 - `grep -rn "/assets/" docs/api-spec.md` ничего не находит.
