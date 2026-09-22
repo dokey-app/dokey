@@ -30,11 +30,21 @@ function normalize(value: string): string {
   return value.replaceAll(/\s+/g, ' ').trim().replaceAll(/;$/g, '');
 }
 
-function fromHeadersFile(text: string): Map<string, string> {
+export function fromHeadersFile(text: string): Map<string, string> {
   const found = new Map<string, string>();
+  // Значения берутся только из правила `/*`: в nginx набор один на все пути, и с ним
+  // сравнивается то, что получает любая страница, а не первая попавшаяся строка файла —
+  // CSP из одного `/sw.js` иначе сходила за CSP всего сайта (T-242).
+  let inRoot = false;
   // Разбор не должен зависеть от перевода строки: CRLF в этом файле уже один раз
   // сделал гейт зелёным на пустом множестве заголовков.
   for (const line of text.split(/\r?\n/)) {
+    if (line.trim() === '' || line.trimStart().startsWith('#')) continue;
+    if (!/^\s/.test(line)) {
+      inRoot = line.trim() === '/*';
+      continue;
+    }
+    if (!inRoot) continue;
     const match = /^\s{2}([A-Za-z-]+):\s*(.+)$/.exec(line);
     if (!match) continue;
     const [, name = '', value = ''] = match;
@@ -95,6 +105,29 @@ export function concatenated(text: string): string[] {
   return problems;
 }
 
+// Сверяемый заголовок в частном правиле — расхождение с nginx по построению: образ ставит набор
+// один раз на уровне `server`, а Cloudflare отдал бы этому пути своё значение (или только его).
+// Одиночное `! Name` без повторной установки — то же расхождение: Cloudflare снимает заголовок
+// с этого пути, а nginx его оставляет.
+// `Cache-Control` не сверяется и частными правилами переопределяется законно (T-234).
+export function outsideRoot(text: string): string[] {
+  const problems: string[] = [];
+  for (const rule of rulesOf(text)) {
+    if (rule.path === '/*') continue;
+    for (const name of new Set([...rule.set, ...rule.unset])) {
+      if (!WANTED.has(name)) continue;
+      if (rule.set.has(name)) {
+        problems.push(`${rule.path}: ${name} задан вне /* — в nginx набор один на все пути`);
+      } else {
+        problems.push(
+          `${rule.path}: ${name} снят вне /* — путь идёт без него, в nginx набор один на все пути`,
+        );
+      }
+    }
+  }
+  return problems;
+}
+
 function fromNginxConf(text: string): Map<string, string> {
   const found = new Map<string, string>();
   for (const match of text.matchAll(/add_header\s+([A-Za-z-]+)\s+"([^"]*)"/g)) {
@@ -132,11 +165,13 @@ export const gate: Gate = {
     if (right.get(PROD_ONLY) !== undefined) {
       problems.push(`${PROD_ONLY}: стоит в ${NGINX}, хотя это заголовок прода (D-150)`);
     }
+    problems.push(...outsideRoot(headersText));
     problems.push(...concatenated(headersText));
 
     if (problems.length > 0) return fail(problems.join('; '));
     return pass(
-      `${CHECKED.length} заголовков совпадают в обеих копиях, ${PROD_ONLY} — только на проде, ` +
+      `${CHECKED.length} заголовков правила /* совпадают в обеих копиях, вне /* не заданы и не сняты, ` +
+        `${PROD_ONLY} — только на проде, ` +
         `частные правила ${HEADERS} заменяют заголовки /* , а не дописывают`,
     );
   },
