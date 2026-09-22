@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest';
 
 // RUN-01. У job без `timeout-minutes` потолок GitHub — 6 часов: зависший прогон держит раннер
 // сутки напролёт (T-228 — RUN-03, T-244 — остальные пять job'ов `pr.yml`, T-249 — `gates` и
-// `image` в `release.yml`). Правило машинное, чтобы новый job без потолка ловился на месте, а не
-// через шесть часов тишины, и оно распространяется на все workflow репозитория, а не на выбранный.
+// `image` в `release.yml`, T-251 — `rebuild` и `probe`). Правило машинное, чтобы новый job без
+// потолка ловился на месте, а не через шесть часов тишины, и оно распространяется на все
+// workflow репозитория, а не на выбранный.
 
 const WORKFLOWS = '.github/workflows';
 
@@ -235,23 +236,22 @@ describe('потолок времени job в workflow', () => {
   });
 
   // Предмет правила — каждый workflow репозитория: зависание держит раннер одинаково, из какого
-  // бы файла job ни пришёл (T-244 — `pr.yml`, T-249 — `release.yml`). Список файлов берётся из
-  // каталога, а не пишется руками, иначе следующий заведённый workflow опять пройдёт молча.
-  // `rebuild.yml` и `synthetic.yml` без потолка найдены в T-249 и правятся своей задачей: пока
-  // они здесь как известное исключение, и каждое исключение подтверждается — как только потолок
-  // там появится, случай станет красным и строка отсюда удалится, а не останется молча.
-  const pending = ['rebuild.yml', 'synthetic.yml'];
-
+  // бы файла job ни пришёл (T-244 — `pr.yml`, T-249 — `release.yml`, T-251 — `rebuild.yml` и
+  // `synthetic.yml`). Исключений из правила больше нет, и списка исключений — тоже: пока список
+  // существовал, файл в нём проходил по отдельному правилу («потолка нет»), а не по общему, и
+  // после исправления его надо было не забыть опустошить. Список файлов берётся из каталога, а не
+  // пишется руками, иначе следующий заведённый workflow опять пройдёт молча; четыре известных
+  // названы отдельно, чтобы пустой или переименованный каталог не выдал «пусто» за «проверено».
   it('в каждом workflow потолок есть у каждого job', async () => {
     const names = (await readdir(WORKFLOWS)).filter((name) => /\.ya?ml$/.test(name)).toSorted();
-    // Пустой или переименованный каталог выдал бы «пусто» за «проверено».
-    expect(names).toEqual(expect.arrayContaining(['pr.yml', 'release.yml', ...pending]));
+    expect(names).toEqual(
+      expect.arrayContaining(['pr.yml', 'rebuild.yml', 'release.yml', 'synthetic.yml']),
+    );
 
     const problems: string[] = [];
     for (const name of names) {
       const found = jobsWithoutTimeout(await readFile(`${WORKFLOWS}/${name}`, 'utf8'));
-      if (pending.includes(name)) expect(found, name).not.toEqual([]);
-      else problems.push(...found.map((problem) => `${name}: ${problem}`));
+      problems.push(...found.map((problem) => `${name}: ${problem}`));
     }
     expect(problems).toEqual([]);
   });
