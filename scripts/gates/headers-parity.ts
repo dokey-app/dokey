@@ -77,10 +77,12 @@ function rulesOf(text: string): HeadersRule[] {
 // `/_astro/*` отдавал `public, max-age=0, must-revalidate, public, max-age=31536000, immutable`
 // (T-234). Заменить значение можно только так: `! Name` в частном правиле, затем `Name: …`.
 // Проверка статическая, чтобы склейка ловилась на сборке, а не на проде.
-function concatenated(text: string): string[] {
+export function concatenated(text: string): string[] {
   const rules = rulesOf(text);
   const base = rules.find((rule) => rule.path === '/*');
-  if (!base) return [];
+  // Без `/*` сравнивать не с чем: пустой список здесь означал бы «не проверено», а гейт
+  // напечатал бы его как «склейки нет» (T-240).
+  if (!base) return [`${HEADERS}: нет правила /* — склейку частных правил проверить не с чем`];
   const problems: string[] = [];
   for (const rule of rules) {
     if (rule === base) continue;
