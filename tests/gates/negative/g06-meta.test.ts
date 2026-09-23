@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { failureOf } from './harness.ts';
+import { CASE_TIMEOUT, failureOf } from './harness.ts';
 
 // Негативный прогон G-06 (D-106 п. 1, NFR-17, US-047 крит. 3): гейт уникальности `title` и
 // `description` обязан краснеть на нарушающей сборке. Предмет суда — **сборка целиком**.
@@ -17,9 +17,12 @@ function page(title: string | undefined, description: string | undefined): strin
 }
 
 // Порядок маршрутов в приговоре задаёт `readdir`, а не набор: случай сверяет, что названы обе
-// страницы, а не в каком порядке их перечислила файловая система.
+// страницы, а не в каком порядке их перечислила файловая система. Значение из фикстуры идёт в
+// шаблон как текст, а не как часть грамматики: `.` или `(` в `title` иначе дали бы либо ложное
+// совпадение, либо исключение — то есть случай судил бы не то, что написано.
 function both(kind: string, value: string): RegExp {
-  return new RegExp(`${kind} «${value}» на (a\\.html, b\\.html|b\\.html, a\\.html)`);
+  const literal = value.replaceAll(/[$()*+.?[\\\]^{|}]/g, String.raw`\$&`);
+  return new RegExp(`${kind} «${literal}» на (a\\.html, b\\.html|b\\.html, a\\.html)`);
 }
 
 // Пустота у гейта — одна ветка на два операнда: `title === '' || description === ''`. Класс
@@ -41,21 +44,29 @@ const BLANK_CASES = Object.entries(BLANK).flatMap(
 );
 
 describe('G-06 на нарушающей сборке', () => {
-  it('валит две страницы с одинаковым title и называет обе', async () => {
-    const detail = await failureOf('G-06', {
-      'dist/a.html': page('DoKey — инструменты', 'Каталог инструментов разработчика'),
-      'dist/b.html': page('DoKey — инструменты', 'Дерево JSON без отправки на сервер'),
-    });
-    expect(detail).toMatch(both('title', 'DoKey — инструменты'));
-  }, 60_000);
+  it(
+    'валит две страницы с одинаковым title и называет обе',
+    async () => {
+      const detail = await failureOf('G-06', {
+        'dist/a.html': page('DoKey — инструменты', 'Каталог инструментов разработчика'),
+        'dist/b.html': page('DoKey — инструменты', 'Дерево JSON без отправки на сервер'),
+      });
+      expect(detail).toMatch(both('title', 'DoKey — инструменты'));
+    },
+    CASE_TIMEOUT,
+  );
 
-  it('валит две страницы с одинаковым description и называет обе', async () => {
-    const detail = await failureOf('G-06', {
-      'dist/a.html': page('Каталог инструментов', 'Ввод не покидает вкладку'),
-      'dist/b.html': page('Дерево JSON', 'Ввод не покидает вкладку'),
-    });
-    expect(detail).toMatch(both('description', 'Ввод не покидает вкладку'));
-  }, 60_000);
+  it(
+    'валит две страницы с одинаковым description и называет обе',
+    async () => {
+      const detail = await failureOf('G-06', {
+        'dist/a.html': page('Каталог инструментов', 'Ввод не покидает вкладку'),
+        'dist/b.html': page('Дерево JSON', 'Ввод не покидает вкладку'),
+      });
+      expect(detail).toMatch(both('description', 'Ввод не покидает вкладку'));
+    },
+    CASE_TIMEOUT,
+  );
 
   // Соседняя страница с непустыми и неповторяющимися значениями — чтобы приговор назвал именно
   // пустоту и именно ту страницу, а не повтор пустых значений на двух сразу.
@@ -68,6 +79,6 @@ describe('G-06 на нарушающей сборке', () => {
       });
       expect(detail).toBe('пустой title или description: index.html');
     },
-    60_000,
+    CASE_TIMEOUT,
   );
 });
