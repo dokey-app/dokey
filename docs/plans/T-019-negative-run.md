@@ -64,7 +64,7 @@ Rejected:
 - [x] Нарушающие сборки G-06: две страницы с одинаковым `title`, две с одинаковым
       `description`, страница с пустым `description`. Файлы:
       `tests/gates/negative/g06-meta.test.ts`; verify: `pnpm test:gates:negative`
-- [ ] Прогон в конвейере PR (D-106 п. 3): job с `timeout-minutes` в `pr.yml`. Файлы:
+- [x] Прогон в конвейере PR (D-106 п. 3): job с `timeout-minutes` в `pr.yml`. Файлы:
       `.github/workflows/pr.yml`; verify: `pnpm test:unit` (сторож потолков
       `tests/unit/workflow-timeouts.test.ts` видит новый job)
 
