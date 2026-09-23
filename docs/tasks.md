@@ -73,7 +73,7 @@ ENT-21…ENT-30).
 | `pnpm gate:a11y` · `gate:provisional` · `gate:nomouse` | G-09 · G-10 · G-11 |
 | `pnpm gate:words` · `gate:subset` · `gate:toolids` | G-12 · G-13 · G-14 |
 | `pnpm gates` | все четырнадцать подряд |
-| `pnpm test:gates:negative` | негативные проверки гейтов и самопроверка покрытия (D-106) |
+| `pnpm test:gates:negative` | негативные проверки гейтов (D-106 п. 1); самопроверку покрытия по `GATES` (п. 2) заводит T-261 |
 | `pnpm test:matrix` · `test:image` · `verify:supply` | RUN-04 · RUN-14 · RUN-15 |
 | `pnpm bench:ttr` · `bench:compare` · `check:prod` | RUN-09 · RUN-09 против площадок · RUN-16 |
 

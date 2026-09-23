@@ -6,7 +6,7 @@ import { promisify } from 'node:util';
 import { expect } from 'vitest';
 import { GATE_MARKER, type GateResult } from '../../../scripts/gates/gate.ts';
 
-// Стенд негативного прогона (D-106 п. 2, US-047 крит. 3). Гейт запускается целиком, отдельным
+// Стенд негативного прогона (D-106 п. 1, US-047 крит. 3). Гейт запускается целиком, отдельным
 // процессом, в каталоге временной фикстуры: предмет — `dist` и `.size-limit.json` — он берёт из
 // рабочего каталога. Импортом `gate.run()` тот же случай не проверить: код возврата, которым гейт
 // валит конвейер, ставит `runGate`, а не `run`.
@@ -16,7 +16,19 @@ import { GATE_MARKER, type GateResult } from '../../../scripts/gates/gate.ts';
 
 const run = promisify(execFile);
 
-/** Гейты, у которых предмет есть уже в Э-0 (`enabledIn: 'Э-0'`). Остальные одиннадцать — `pending`. */
+/**
+ * Пути гейтов, у которых негативный случай уже написан.
+ *
+ * Это **временный дубликат** списка, а не его источник: по D-106 п. 2 набор обязан брать список
+ * из массива `GATES` в `scripts/gates/run-all.ts` — единственного места, где он существует, — но
+ * там он не экспортирован, а импорт файла запустил бы прогон всех четырнадцати гейтов. Экспорт и
+ * самопроверку покрытия по нему заводит T-261; до неё гейт, у которого предмет есть, а
+ * негативного случая нет, проходит молча — механизма против этого здесь пока нет.
+ *
+ * Предмет в Э-0 есть у трёх гейтов из четырнадцати — G-01, G-02 и G-06(`enabledIn: 'Э-0'`);
+ * остальные одиннадцать отвечают `pending('Э-1')`. Случая нет пока у G-01: его приговор — три
+ * сбора Chrome на медленной сборке, и это отдельная задача T-260.
+ */
 export const GATES: Record<string, string> = {
   'G-02': 'scripts/gates/size.ts',
   'G-06': 'scripts/gates/meta.ts',
@@ -59,10 +71,17 @@ export async function gateOn(id: string, files: Record<string, string>): Promise
       await mkdir(dirname(join(root, path)), { recursive: true });
       await writeFile(join(root, path), content);
     }
+    // Потолок у самого процесса, а не только у случая: таймаут Vitest отклоняет промис, но
+    // дочерний процесс не убивает — `finally` ниже не исполнился бы, и зависший гейт пережил
+    // бы прогон вместе со своим каталогом фикстуры. `maxBuffer` поднят с умолчания в 1 МБ:
+    // вывод гейта растёт с числом маршрутов, а переполнение кончается убийством процесса, то
+    // есть приговор подменяется смертью от буфера.
     const options = {
       cwd: root,
       encoding: 'utf8' as const,
       env: { ...process.env, DOKEY_GATE_JSON: '1' },
+      timeout: 120_000,
+      maxBuffer: 16 * 1024 * 1024,
     };
     try {
       const { stdout } = await run(process.execPath, ['--experimental-strip-types', gate], options);
@@ -74,13 +93,14 @@ export async function gateOn(id: string, files: Record<string, string>): Promise
         stdout?: string;
         stderr?: string;
       };
-      // Процесс, убитый сигналом или не запустившийся, кода не даёт: молча за «поймал» это не
-      // сходит.
+      // Процесс, убитый сигналом, потолком времени или переполнением буфера, кода не даёт:
+      // молча за «поймал» это не сходит, и причина называется своя — у `execFile` она лежит в
+      // строковом `code` (`ERR_CHILD_PROCESS_STDIO_MAXBUFFER`) или в `signal`.
       if (typeof failed.code !== 'number') {
-        throw new Error(
-          `${id}: процесс не вернул кода (${String(failed.signal)}):\n${failed.stderr ?? ''}`,
-          { cause: error },
-        );
+        const why = `${String(failed.code)}/${String(failed.signal)}`;
+        throw new Error(`${id}: процесс не вернул кода (${why}):\n${failed.stderr ?? ''}`, {
+          cause: error,
+        });
       }
       const stdout = failed.stdout ?? '';
       return { code: failed.code, out: stdout, verdict: verdictOf(stdout, id) };

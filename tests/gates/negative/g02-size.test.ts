@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { failureOf } from './harness.ts';
 
-// Негативный прогон G-02 (D-106 п. 2, NFR-17, US-047 крит. 3): гейт бюджетов веса обязан
+// Негативный прогон G-02 (D-106 п. 1, NFR-17, US-047 крит. 3): гейт бюджетов веса обязан
 // краснеть на нарушающей сборке. Предмет суда здесь — **сборка целиком**; разбор HTML и
 // импортов судит RUN-01 (tests/unit/size-gate.test.ts).
 
@@ -64,15 +64,18 @@ describe('G-02 на нарушающей сборке', () => {
       '.size-limit.json': JSON.stringify([
         {
           name: 'шрифты критического пути',
-          path: ['dist/fonts/manrope-400.woff2', 'dist/fonts/jetbrains-mono-400.woff2'],
+          path: [
+            'dist/fonts/manrope-400.a1b2c3d4.woff2',
+            'dist/fonts/jetbrains-mono-400.e5f6a7b8.woff2',
+          ],
           limit: '48 kB',
           gzip: true,
         },
       ]),
-      'dist/fonts/manrope-400.woff2': 'woff2',
+      'dist/fonts/manrope-400.a1b2c3d4.woff2': 'woff2',
     });
     expect(detail).toContain(
-      'шрифты критического пути: в сборке нет dist/fonts/jetbrains-mono-400.woff2',
+      'шрифты критического пути: в сборке нет dist/fonts/jetbrains-mono-400.e5f6a7b8.woff2',
     );
     expect(detail).toContain('часть предмета за целое не мерится');
   }, 60_000);
