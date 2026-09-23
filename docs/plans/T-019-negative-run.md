@@ -58,7 +58,7 @@ Rejected:
       initial JS больше бюджета 40 kB. Файлы: `vitest.config.ts`, `package.json`,
       `tests/gates/negative/harness.ts`, `tests/gates/negative/g02-size.test.ts`; verify:
       `pnpm test:gates:negative`
-- [ ] Остальные нарушающие сборки G-02 — бюджет, чей путь не нашёл файла при нашедших соседях,
+- [x] Остальные нарушающие сборки G-02 — бюджет, чей путь не нашёл файла при нашедших соседях,
       и спецификатор, не разрешающийся в файл сборки (класс, а не одна форма). Файлы:
       `tests/gates/negative/g02-size.test.ts`; verify: `pnpm test:gates:negative`
 - [ ] Нарушающие сборки G-06: две страницы с одинаковым `title`, две с одинаковым
