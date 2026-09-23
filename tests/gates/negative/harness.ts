@@ -43,10 +43,17 @@ if (PROCESS_TIMEOUT >= CASE_TIMEOUT) {
  * Предмет в Э-0 есть у трёх гейтов из четырнадцати — G-01, G-02 и G-06 (`enabledIn: 'Э-0'`);
  * остальные одиннадцать отвечают `pending('Э-1')`. Случая нет пока у G-01: его приговор — три
  * сбора Chrome на медленной сборке, и это отдельная задача T-260.
+ *
+ * RUN-16 (`gate:headers-parity`) в те четырнадцать **не входит**: в массиве `GATES` файла
+ * `run-all.ts` его нет, `pnpm gates` его не зовёт — зовёт хук при правке `infra/headers/` и
+ * `infra/docker/` (D-107). Перечень здесь поэтому становится надмножеством списка `run-all.ts`;
+ * направление самопроверки T-261 — «у гейта из `GATES` есть случай» — от лишнего ключа не
+ * страдает.
  */
 export const GATES: Record<string, string> = {
   'G-02': 'scripts/gates/size.ts',
   'G-06': 'scripts/gates/meta.ts',
+  'RUN-16': 'scripts/gates/headers-parity.ts',
 };
 
 export interface Verdict extends GateResult {
