@@ -76,7 +76,7 @@ Rejected:
       `tests/gates/negative/run16-headers.test.ts` (новый: `headersFile()`, `nginxConf()`,
       сторожевой случай через `gateOn` — исход `pass`, код 0); verify:
       `pnpm test:gates:negative`
-- [ ] Обе половины правила профиля и формы переезда заголовка: files
+- [x] Обе половины правила профиля и формы переезда заголовка: files
       `tests/gates/negative/run16-headers.test.ts` — пять случаев через `failureOf('RUN-16', …)`:
       HSTS пропал из `_headers`; HSTS в `_headers`, но в частном правиле, а не в `/*`; HSTS
       вернулся в `nginx.conf` на уровень `server`; HSTS в `nginx.conf` внутри `location`; HSTS
