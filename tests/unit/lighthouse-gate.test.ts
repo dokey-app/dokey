@@ -4,12 +4,17 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  type Assert,
+  type AuditResult,
   type Collect,
+  type Lhr,
   RUNS,
+  assertedAudits,
   htmlFiles,
   plannedRoutes,
   profileCleanupRace,
   shortOfRuns,
+  shortOfValues,
 } from '../../scripts/gates/lighthouse.ts';
 
 // RUN-01. Устойчивость приговора G-01 (T-229). Приговор считается по медиане прогонов
@@ -24,7 +29,7 @@ import {
 interface Rc {
   ci: {
     collect: Collect;
-    assert: { aggregationMethod: string };
+    assert: Assert & { aggregationMethod: string };
   };
 }
 
@@ -179,5 +184,187 @@ describe('G-01: ненулевой код сбора списывается то
   it('другая ошибка после полного обхода не списывается', () => {
     const other = `${collectLog}\nError: connect ECONNREFUSED 127.0.0.1:54913`;
     expect(profileCleanupRace(other, 'win32')).toBe(false);
+  });
+});
+
+// RUN-01. Полнота агрегата по значениям аудита (T-255). Отчётов может быть ровно `RUNS`, а
+// значений в медиане — меньше: `@lhci/utils/src/assertions.js` (`getAssertionResult`) снимает
+// величину с каждого отчёта и тут же отбрасывает нечисловые — `values.filter(isFiniteNumber)`.
+// Пока хоть одно значение осталось, утверждение считается по остатку и молча проходит; в
+// `assertion-results.json` при этом не попадает ничего, потому что `getAllAssertionResults`
+// отдаёт наружу только провалившиеся утверждения. Поэтому счёт значений ведётся по самим
+// отчётам `.lighthouseci/lhr-*.json`, а список сверяемых аудитов берётся из пресета.
+
+/** Аудит отчёта в той части, которую читают `AUDIT_TYPE_VALUE_GETTERS`. */
+function audit(fields: AuditResult): AuditResult {
+  return fields;
+}
+
+/** Отчёт `lhr-*.json` в той части, которую читает `lhci assert`. */
+function report(
+  path: string,
+  audits: Record<string, AuditResult>,
+  categories: Record<string, { score: number | null }> = {
+    performance: { score: 1 },
+    accessibility: { score: 1 },
+    'best-practices': { score: 1 },
+  },
+): Lhr {
+  return { finalUrl: `http://localhost:54913${path}`, audits, categories };
+}
+
+/** Три отчёта одного маршрута; в третьем аудит `largest-contentful-paint` подменён. */
+function withLast(broken: AuditResult | undefined): Lhr[] {
+  const good = audit({ score: 1, scoreDisplayMode: 'numeric', numericValue: 927.4 });
+  return [
+    report('/index.html', { 'largest-contentful-paint': good }),
+    report('/index.html', { 'largest-contentful-paint': good }),
+    report('/index.html', broken ? { 'largest-contentful-paint': broken } : {}),
+  ];
+}
+
+/** Сверяемые аудиты — из настоящего пресета: руками их список в проверке не пишется. */
+async function asserted() {
+  return assertedAudits((await rc()).ci.assert).audits;
+}
+
+describe('G-01: медиана считается по значениям аудита, а не по числу отчётов', () => {
+  it('список сверяемых аудитов выведен из пресета, а не написан здесь руками', async () => {
+    const config = (await rc()).ci.assert;
+    const { audits, unreadable } = assertedAudits(config);
+    expect(unreadable).toEqual([]);
+    // Ровно те ключи, которым пресет дал уровень error: приговор G-01 выносят они.
+    const expected = Object.entries(config.assertions ?? {})
+      .filter(([, spec]) => (Array.isArray(spec) ? spec[0] : spec) === 'error')
+      .map(([key]) => key);
+    expect(audits.map((item) => item.key)).toEqual(expected);
+    expect(audits.length).toBeGreaterThan(0);
+    // `total-byte-weight` объявлен уровнем warn — приговора он не выносит и не сверяется.
+    expect(audits.map((item) => item.key)).not.toContain('total-byte-weight');
+  });
+
+  it('типы утверждений выбираются так же, как `getStandardAssertionResults`', () => {
+    const types = (spec: Assert['assertions']) =>
+      assertedAudits({ assertions: spec }).audits[0]?.types;
+    // Ручное утверждение отменяет умолчание `minScore: 0.9` — величина снимается одна.
+    expect(types({ 'largest-contentful-paint': ['error', { maxNumericValue: 1200 }] })).toEqual([
+      'maxNumericValue',
+    ]);
+    expect(types({ 'largest-contentful-paint': 'error' })).toEqual(['minScore']);
+    expect(types({ 'x-audit': ['error', { minScore: 1, maxNumericValue: 5 }] })).toEqual([
+      'maxNumericValue',
+      'minScore',
+    ]);
+    expect(types({ 'x-audit': ['warn', { minScore: 1 }] })).toBeUndefined();
+    expect(types({ 'x-audit': 'off' })).toBeUndefined();
+  });
+
+  it('признаётся непрочитанной конфигурация, список утверждений которой гейту не виден', () => {
+    expect(assertedAudits({ preset: 'lighthouse:recommended' }).unreadable).toHaveLength(1);
+    expect(assertedAudits({ assertMatrix: [] }).unreadable).toHaveLength(1);
+    const exotic = assertedAudits({ assertions: { 'resource-summary:script:size': 'error' } });
+    expect(exotic.unreadable.join()).toContain('resource-summary');
+    expect(exotic.audits).toEqual([]);
+  });
+
+  // Дефект T-255: отчётов три, а `numericValue` есть только в двух — медиана считается по
+  // двум, и ни гейт, ни `assertion-results.json` об этом не говорят ни слова.
+  it('видит аудит без numericValue в одном отчёте из трёх', async () => {
+    const short = shortOfValues(
+      withLast(audit({ score: 1, scoreDisplayMode: 'numeric' })),
+      RUNS,
+      await asserted(),
+    );
+    expect(short).toHaveLength(1);
+    expect(short[0]).toContain('/index.html');
+    expect(short[0]).toContain('largest-contentful-paint');
+    expect(short[0]).toContain('значений 2, а не 3');
+    expect(short[0]).toContain('нет numericValue');
+  });
+
+  it('видит аудит, который в одном прогоне оказался неприменим', async () => {
+    const short = shortOfValues(
+      withLast(audit({ score: null, scoreDisplayMode: 'notApplicable' })),
+      RUNS,
+      await asserted(),
+    );
+    expect(short).toHaveLength(1);
+    expect(short[0]).toContain('значений 2, а не 3');
+    expect(short[0]).toContain('notApplicable');
+  });
+
+  it('видит аудит, который в одном прогоне упал', async () => {
+    const short = shortOfValues(
+      withLast(audit({ score: null, scoreDisplayMode: 'error' })),
+      RUNS,
+      await asserted(),
+    );
+    expect(short).toHaveLength(1);
+    expect(short[0]).toContain('значений 2, а не 3');
+    expect(short[0]).toContain('scoreDisplayMode: error');
+  });
+
+  it('видит аудит, которого в одном отчёте нет вовсе', async () => {
+    const short = shortOfValues(withLast(undefined), RUNS, await asserted());
+    expect(short).toHaveLength(1);
+    expect(short[0]).toContain('аудита нет');
+  });
+
+  // Категория без оценки: `getCategoryAssertionResults` строит псевдо-аудит `{score}`, а
+  // `score: null` не число и не `notApplicable` — значение отбрасывается тем же фильтром.
+  it('видит категорию без оценки в одном отчёте из трёх', async () => {
+    const good = audit({ score: 1, scoreDisplayMode: 'numeric', numericValue: 927.4 });
+    const lhrs = [
+      report('/index.html', { 'largest-contentful-paint': good }),
+      report('/index.html', { 'largest-contentful-paint': good }),
+      report(
+        '/index.html',
+        { 'largest-contentful-paint': good },
+        {
+          performance: { score: null },
+          accessibility: { score: 1 },
+          'best-practices': { score: 1 },
+        },
+      ),
+    ];
+    const short = shortOfValues(lhrs, RUNS, await asserted());
+    expect(short).toHaveLength(1);
+    expect(short[0]).toContain('categories:performance');
+    expect(short[0]).toContain('значений 2, а не 3');
+  });
+
+  it('называет только тот маршрут, в котором значений недобрано', async () => {
+    const good = audit({ score: 1, scoreDisplayMode: 'numeric', numericValue: 927.4 });
+    const lhrs = [
+      ...withLast(audit({ score: 1, scoreDisplayMode: 'numeric' })),
+      ...Array.from({ length: RUNS }, () =>
+        report('/health/index.html', { 'largest-contentful-paint': good }),
+      ),
+    ];
+    const short = shortOfValues(lhrs, RUNS, await asserted());
+    expect(short).toHaveLength(1);
+    expect(short[0]).toContain('/index.html');
+    expect(short[0]).not.toContain('/health/');
+  });
+
+  it('молчит, когда каждый отчёт дал число по каждому сверяемому аудиту', async () => {
+    const good = audit({ score: 1, scoreDisplayMode: 'numeric', numericValue: 927.4 });
+    const lhrs = Array.from({ length: RUNS }, () =>
+      report('/index.html', { 'largest-contentful-paint': good }),
+    );
+    expect(shortOfValues(lhrs, RUNS, await asserted())).toEqual([]);
+  });
+
+  // Ловушка `AUDIT_TYPE_VALUE_GETTERS.minScore`: неприменимый аудит даёт для оценки не
+  // «нет значения», а единицу. Гейт повторяет правило инструмента, а не своё: недобора
+  // значений здесь нет, и красить прогон не за что — величина в медиану вошла.
+  it('для оценки неприменимый аудит — это значение 1, как и у @lhci', () => {
+    const { audits } = assertedAudits({ assertions: { 'x-audit': ['error', { minScore: 1 }] } });
+    const lhrs = Array.from({ length: RUNS }, () =>
+      report('/index.html', {
+        'x-audit': audit({ score: null, scoreDisplayMode: 'notApplicable' }),
+      }),
+    );
+    expect(shortOfValues(lhrs, RUNS, audits)).toEqual([]);
   });
 });
