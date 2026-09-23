@@ -2,7 +2,7 @@
 
 ## Request
 
-- [ ] T-019 — завести прогон `test:gates:negative` и негативные сборки для G-02 и G-06 (US-047, D-106): границы — `tests/gates/negative/*`, `package.json`, `vitest.config.ts`, `.github/workflows/pr.yml`; готово — `pnpm test:gates:negative`: сборка, нарушающая бюджет initial JS, и сборка с повтором `title` или пустым `description` дают исход `fail` своего гейта и код возврата 1, а прогон идёт в `pr.yml` отдельным job с потолком времени
+- [x] T-019 — завести прогон `test:gates:negative` и негативные сборки для G-02 и G-06 (US-047, D-106): границы — `tests/gates/negative/*`, `package.json`, `vitest.config.ts`, `.github/workflows/pr.yml`; готово — `pnpm test:gates:negative`: сборка, нарушающая бюджет initial JS, и сборка с повтором `title` или пустым `description` дают исход `fail` своего гейта и код возврата 1, а прогон идёт в `pr.yml` отдельным job с потолком времени
 
 Links: [US-047](../user-stories.md) крит. 3 · NFR-17 · [D-106](../decisions.md) · RUN-01 ·
 [G-02](../../scripts/gates/size.ts) · [G-06](../../scripts/gates/meta.ts)
