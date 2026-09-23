@@ -223,6 +223,11 @@ function withLast(broken: AuditResult | undefined): Lhr[] {
   ];
 }
 
+/** Величины, которые гейт снимет с единственного утверждения такого вида. */
+function types(spec: NonNullable<Assert['assertions']>) {
+  return assertedAudits({ assertions: spec }).audits[0]?.types;
+}
+
 /** Сверяемые аудиты — из настоящего пресета: руками их список в проверке не пишется. */
 async function asserted() {
   return assertedAudits((await rc()).ci.assert).audits;
@@ -244,8 +249,6 @@ describe('G-01: медиана считается по значениям ауд
   });
 
   it('типы утверждений выбираются так же, как `getStandardAssertionResults`', () => {
-    const types = (spec: Assert['assertions']) =>
-      assertedAudits({ assertions: spec }).audits[0]?.types;
     // Ручное утверждение отменяет умолчание `minScore: 0.9` — величина снимается одна.
     expect(types({ 'largest-contentful-paint': ['error', { maxNumericValue: 1200 }] })).toEqual([
       'maxNumericValue',

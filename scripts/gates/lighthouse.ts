@@ -46,8 +46,25 @@ export interface Collect {
   staticDirFileDiscoveryDepth?: number;
 }
 
+/** Ветка `ci.assert` пресета: из неё же `lhci assert` берёт список утверждений. */
+export interface Assert {
+  aggregationMethod?: string;
+  preset?: string;
+  assertMatrix?: unknown;
+  assertions?: Record<string, AssertionSpec>;
+}
+
+type Level = 'off' | 'warn' | 'error';
+type AssertionSpec = Level | [Level, AssertionOptions];
+
+interface AssertionOptions {
+  minScore?: number;
+  maxLength?: number;
+  maxNumericValue?: number;
+}
+
 interface Preset {
-  ci: { collect: Collect };
+  ci: { collect: Collect; assert?: Assert };
 }
 
 /** Умолчания `@lhci/cli/src/collect/collect.js` — гейт обязан отбирать адреса так же. */
@@ -148,6 +165,173 @@ export function shortOfRuns(finalUrls: string[], runs: number, planned: string[]
   return lines;
 }
 
+/**
+ * Тип утверждения `@lhci`: им выбирается не только оператор сравнения, но и сама величина,
+ * которую утверждение снимает с аудита (`AUDIT_TYPE_VALUE_GETTERS`). Порядок — тот же, в
+ * котором их перебирает `getStandardAssertionResults`.
+ */
+export type AssertionType = 'maxLength' | 'maxNumericValue' | 'minScore';
+
+/** Сверяемый аудит: ключ пресета, адрес величины в отчёте и снимаемые с него типы. */
+export interface Asserted {
+  key: string;
+  auditId: string;
+  property?: string;
+  types: AssertionType[];
+}
+
+/** Аудит отчёта в той части, которую читают `AUDIT_TYPE_VALUE_GETTERS`. */
+export interface AuditResult {
+  score?: number | null;
+  scoreDisplayMode?: string;
+  numericValue?: number;
+  details?: { items?: unknown[] };
+}
+
+/** Отчёт `lhr-*.json` в той части, которую читает `lhci assert`. */
+export interface Lhr {
+  finalUrl: string;
+  audits?: Record<string, AuditResult | undefined>;
+  categories?: Record<string, { score?: number | null } | undefined>;
+}
+
+/** `_.kebabCase` из `@lhci/utils/src/lodash.js`: ключи утверждений `lhci assert` правит им. */
+function kebabCase(key: string): string {
+  return key.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+}
+
+/** `normalizeAssertion`: голая строка — уровень без настроек, отсутствие ключа — `off`. */
+function severityOf(spec: AssertionSpec | undefined): [Level, AssertionOptions] {
+  if (!spec) return ['off', {}];
+  return typeof spec === 'string' ? [spec, {}] : spec;
+}
+
+/** Ключи, у которых величина берётся не из `lhr.audits[id]`, а особым путём. */
+const SPECIAL_AUDITS = new Set(['performance-budget', 'resource-summary', 'user-timings']);
+
+/**
+ * Аудиты, которыми выносится приговор G-01, и величины, которые с них снимаются. Список не
+ * пишется здесь руками: он выведен из того же места, откуда его берёт `lhci assert`, — ключей
+ * `ci.assert.assertions`, приведённых `_.kebabCase` и разрезанных по `.` и `:`
+ * (`resolveAssertionOptionsAndLhrs`). Набор типов повторяет `getStandardAssertionResults`:
+ * `maxLength` и `maxNumericValue` — если заданы, `minScore` — если задан или если ручных
+ * утверждений не было вовсе (тогда у `@lhci` включается умолчание `minScore: 0.9`).
+ *
+ * Берутся только утверждения уровня `error`: приговор выносят они, а `warn` печатается
+ * предупреждением и гейт не красит — требовать от него полного набора значило бы поднять
+ * уровень, объявленный пресетом. Изменят уровень в пресете — изменится и список здесь.
+ *
+ * Чего гейт прочитать не может, он называет вслух, а не пропускает молча: `ci.assert.preset`
+ * и `assertMatrix` приносят утверждения из другого места, а у `performance-budget`,
+ * `resource-summary` и `user-timings` величина собирается из `details.items` особым путём.
+ */
+export function assertedAudits(config: Assert): { audits: Asserted[]; unreadable: string[] } {
+  const unreadable: string[] = [];
+  if (config.preset) {
+    unreadable.push(`ci.assert.preset ${config.preset}: его утверждения гейту не видны`);
+  }
+  if (config.assertMatrix) {
+    unreadable.push('ci.assert.assertMatrix: гейт читает только ci.assert.assertions');
+  }
+  const assertions = config.assertions ?? {};
+  const audits: Asserted[] = [];
+  for (const key of new Set(Object.keys(assertions).map(kebabCase))) {
+    const [severity, options] = severityOf(assertions[key]);
+    if (severity !== 'error') continue;
+    const [auditId, ...rest] = key.split(/[.:]/).filter(Boolean);
+    if (!auditId) continue;
+    if (SPECIAL_AUDITS.has(auditId)) {
+      unreadable.push(`${key}: величину "${auditId}" гейт считать не умеет`);
+      continue;
+    }
+    const types: AssertionType[] = [];
+    if (options.maxLength !== undefined) types.push('maxLength');
+    if (options.maxNumericValue !== undefined) types.push('maxNumericValue');
+    if (options.minScore !== undefined || types.length === 0) types.push('minScore');
+    const property = rest.join('.');
+    audits.push(property ? { key, auditId, property, types } : { key, auditId, types });
+  }
+  return { audits, unreadable };
+}
+
+/** Аудит, с которого снимается величина. У `categories:*` это псевдо-аудит из одной оценки. */
+function subject(lhr: Lhr, audit: Asserted): AuditResult | undefined {
+  if (audit.auditId === 'categories' && audit.property) {
+    const category = lhr.categories?.[audit.property];
+    return category ? { score: category.score ?? null } : undefined;
+  }
+  return lhr.audits?.[audit.auditId];
+}
+
+function missingValue(result: AuditResult, what: string): string {
+  const mode = result.scoreDisplayMode ? ` (scoreDisplayMode: ${result.scoreDisplayMode})` : '';
+  return `нет ${what}${mode}`;
+}
+
+/**
+ * Что дал аудит в одном отчёте: величину, которую возьмёт `@lhci`, и её человеческое имя для
+ * текста провала. Повторяет `AUDIT_TYPE_VALUE_GETTERS` дословно, включая две ловушки оценки:
+ * неприменимый аудит идёт в агрегат единицей, справочный — нулём. Правило здесь не своё, а
+ * инструмента: разойдись гейт с ним — он красил бы полный агрегат или пропускал неполный.
+ */
+export function auditValue(
+  lhr: Lhr,
+  audit: Asserted,
+  type: AssertionType,
+): { value?: number; got: string } {
+  const result = subject(lhr, audit);
+  if (!result) return { got: audit.auditId === 'categories' ? 'категории нет' : 'аудита нет' };
+  if (type === 'maxLength') {
+    const length = result.details?.items?.length ?? 0;
+    return { value: length, got: String(length) };
+  }
+  if (type === 'maxNumericValue') {
+    const numeric = result.numericValue;
+    if (typeof numeric === 'number' && Number.isFinite(numeric)) {
+      return { value: numeric, got: String(numeric) };
+    }
+    return { got: missingValue(result, 'numericValue') };
+  }
+  if (typeof result.score === 'number' && Number.isFinite(result.score)) {
+    return { value: result.score, got: String(result.score) };
+  }
+  if (result.scoreDisplayMode === 'notApplicable') return { value: 1, got: 'notApplicable → 1' };
+  if (result.scoreDisplayMode === 'informative') return { value: 0, got: 'informative → 0' };
+  return { got: missingValue(result, 'score') };
+}
+
+/**
+ * По каким сверяемым аудитам агрегат маршрута считался бы не по всем прогонам. Полного набора
+ * отчётов для этого мало: `getAssertionResult` снимает величину с каждого отчёта группы и тут
+ * же выбрасывает нечисловые — `const filteredValues = values.filter(isFiniteNumber)`, — а
+ * медиану считает по остатку. Одного значения из трёх хватает, чтобы утверждение прошло: пока
+ * остаток не пуст, «Audit failed to produce a valid value» не печатается, а наружу, в
+ * `assertion-results.json`, `getAllAssertionResults` отдаёт только провалившиеся утверждения.
+ * Пропажа не оставляет следа нигде, кроме самих отчётов, — по ним и считается.
+ *
+ * Отчёты делятся по `finalUrl` целиком, как их делит `lhci assert`, а не по маршруту: порт у
+ * сбора случайный, но группу задаёт именно адрес.
+ */
+export function shortOfValues(lhrs: Lhr[], runs: number, audits: Asserted[]): string[] {
+  const groups = new Map<string, Lhr[]>();
+  for (const lhr of lhrs) groups.set(lhr.finalUrl, [...(groups.get(lhr.finalUrl) ?? []), lhr]);
+  const lines: string[] = [];
+  for (const [url, group] of groups) {
+    for (const audit of audits) {
+      for (const type of audit.types) {
+        const got = group.map((lhr) => auditValue(lhr, audit, type));
+        const counted = got.filter((sample) => sample.value !== undefined).length;
+        if (counted === runs) continue;
+        const values = got.map((sample) => sample.got).join(', ');
+        lines.push(
+          `${route(url)} ${audit.key} (${type}): значений ${counted}, а не ${runs} — ${values}`,
+        );
+      }
+    }
+  }
+  return lines;
+}
+
 /** Строка, которую `lhci collect` печатает, обойдя все адреса до единого. */
 const COLLECT_DONE = 'Done running Lighthouse!';
 /** Коды отказа файловой системы, которыми кончается уборка каталога, занятого процессом. */
@@ -173,16 +357,13 @@ export function profileCleanupRace(output: string, platform: string): boolean {
   return CLEANUP_ERRNO.test(output) && PROFILE_DIR.test(output);
 }
 
-async function collected(): Promise<{ reports: string[]; urls: string[] }> {
+async function collected(): Promise<{ reports: string[]; lhrs: Lhr[] }> {
   const reports: string[] = [];
   for await (const entry of glob(`${OUT}/lhr-*.json`)) reports.push(entry);
-  const urls = await Promise.all(
-    reports.map(async (report) => {
-      const lhr = JSON.parse(await readFile(report, 'utf8')) as { finalUrl: string };
-      return lhr.finalUrl;
-    }),
+  const lhrs = await Promise.all(
+    reports.map(async (report) => JSON.parse(await readFile(report, 'utf8')) as Lhr),
   );
-  return { reports, urls };
+  return { reports, lhrs };
 }
 
 // G-01 «объявленные пороги скорости» — NFR-01, NFR-02, NFR-04. Гейт складывается из двух
@@ -210,6 +391,16 @@ async function collected(): Promise<{ reports: string[]; urls: string[] }> {
 // GitHub это дало `categories:performance` 0.85 и 0.77 против порога 0.95 на двух сборках,
 // зелёных при перезапуске без единой правки. Полноту набора гейт проверяет сам: маршрут,
 // по которому отчётов не `RUNS`, — это не «почти медиана», а другой приговор.
+//
+// **Полон набор отчётов — это ещё не полон агрегат** (T-255). Величину утверждение снимает с
+// каждого отчёта группы и тут же выбрасывает нечисловые (`getAssertionResult`:
+// `values.filter(isFiniteNumber)`), а медиану считает по остатку. Аудит, упавший
+// (`scoreDisplayMode: error`), не применившийся (`notApplicable`) или не отдавший
+// `numericValue` в одном прогоне из трёх, оставляет медиану на двух значениях — и не оставляет
+// следа: пока остаток не пуст, утверждение проходит, а в `assertion-results.json` попадают
+// только провалившиеся. Поэтому значения гейт считает сам, по отчётам (`shortOfValues`), а
+// список сверяемых утверждений берёт оттуда же, откуда его берёт `lhci assert`, — из
+// `ci.assert.assertions` пресета (`assertedAudits`); руками он здесь не пишется.
 //
 // Полнота считается от плана сбора (`plannedRoutes`), а не от собранных отчётов. План гейт
 // выводит из того же источника, из которого адреса берёт `lhci collect`, — пресета и html
@@ -255,10 +446,22 @@ export const gate: Gate = {
       );
     }
 
+    const { audits, unreadable } = assertedAudits(preset.ci.assert ?? {});
+    if (unreadable.length > 0) {
+      return fail(
+        `${RC}: гейт не видит всех сверяемых утверждений, а значит не досчитает и значений:\n` +
+          unreadable.map((line) => `  ${line}`).join('\n'),
+      );
+    }
+    if (audits.length === 0) {
+      return fail(`${RC}: ни одного утверждения уровня error — приговор выносить нечем`);
+    }
+
     let attempts = 0;
     let reports: string[] = [];
-    let urls: string[] = [];
+    let lhrs: Lhr[] = [];
     let short: string[] = [];
+    let thin: string[] = [];
     let output = '';
     let code: number | null = null;
     while (attempts < ATTEMPTS) {
@@ -267,9 +470,16 @@ export const gate: Gate = {
       const run = lhci('collect');
       code = run.status;
       output = `${run.stdout ?? ''}${run.stderr ?? ''}`;
-      ({ reports, urls } = await collected());
-      short = shortOfRuns(urls, RUNS, planned);
-      if (reports.length > 0 && short.length === 0) break;
+      ({ reports, lhrs } = await collected());
+      short = shortOfRuns(
+        lhrs.map((lhr) => lhr.finalUrl),
+        RUNS,
+        planned,
+      );
+      // Значения считаются по полному набору: на неполном каждая недостача была бы названа
+      // дважды — и как недобранный отчёт, и как недобранное значение в нём.
+      thin = short.length === 0 ? shortOfValues(lhrs, RUNS, audits) : [];
+      if (reports.length > 0 && short.length === 0 && thin.length === 0) break;
     }
 
     if (reports.length === 0) {
@@ -280,6 +490,15 @@ export const gate: Gate = {
       return fail(
         `набор не сошёлся с планом сбора (попыток ${attempts}) — маршрутов в плане ${planned.length}, ` +
           `медиана считалась бы не по ${RUNS} прогонам:\n` +
+          lines.join('\n'),
+      );
+    }
+    if (thin.length > 0) {
+      const lines = thin.map((line) => `  ${line}`);
+      return fail(
+        `отчётов ${reports.length}, но аудит дал число не в каждом (попыток ${attempts}) — ` +
+          'медиана считалась бы по остатку (`values.filter(isFiniteNumber)`, ' +
+          '@lhci/utils/src/assertions.js):\n' +
           lines.join('\n'),
       );
     }
@@ -318,7 +537,8 @@ export const gate: Gate = {
     const retry = attempts > 1 ? `, сборов ${attempts}` : '';
     const disk = code === 0 ? '' : `, код сбора ${code}: уборка профиля Chrome после обхода`;
     return pass(
-      `отчётов ${reports.length}: маршрутов ${planned.length} × прогонов ${RUNS}${retry}${disk}`,
+      `отчётов ${reports.length}: маршрутов ${planned.length} × прогонов ${RUNS}; ` +
+        `сверяемых утверждений ${audits.length}, значений у каждого ${RUNS}${retry}${disk}`,
     );
   },
 };
