@@ -20,6 +20,7 @@
     "test:unit": "vitest run --project unit",
     "test:int": "vitest run --project integration",
     "test:e2e": "playwright test",
+    "test:gates:negative": "vitest run --project gates:negative",
     "gate:lh": "node --experimental-strip-types scripts/gates/lighthouse.ts",
     "gate:size": "node --experimental-strip-types scripts/gates/size.ts",
     "gate:persist": "node --experimental-strip-types scripts/gates/persistence.ts",
