@@ -67,8 +67,9 @@ REQ-DIST-01 · NFR-17 · Q-185 (закрыт D-129)
 - **`no-restricted-properties` реализовано** и принимает запись без `object` — «любой объект,
   это свойство». На пробе пойманы все шесть имён — по шесть ошибок на файл, код выхода `1`:
   `el.innerHTML = …`, `el.outerHTML = …`, `el.insertAdjacentHTML(…)`, `iframe.srcdoc = …`,
-  `document.write(…)`, `document.writeln(…)`; `await navigator.clipboard.write([])` в том же
-  файле **не краснеет** — запись `write`/`writeln` привязана к `document`.
+  `document.write(…)`, `document.writeln(…)`; ни `await navigator.clipboard.writeText('x')`, ни
+  `await navigator.clipboard.write([])` в том же файле **не краснеют** — запись `write`/`writeln`
+  привязана к `document`.
 - **Обходы закрыты:** вычисляемый доступ `el['innerHTML']`, деструктуризация `const { innerHTML } = el`
   и чтение `const s = el.innerHTML` тоже красные.
 - **`.astro` линтуется:** те же шесть нарушений внутри `<script>` компонента
@@ -85,7 +86,12 @@ REQ-DIST-01 · NFR-17 · Q-185 (закрыт D-129)
   («Property 'write' is only allowed on these objects: …»), и точно так же красят
   `const c = navigator.clipboard; c.write(…)`. Список сверяется не с тем выражением, каким записан
   доступ. Значит, отказ от записи без `object` верен: единственный способ не запретить
-  REQ-CORE-03 — привязать `write` и `writeln` к объекту `document`.
+  **REQ-INPUT-07** (prd.md:96, «Скопировать»; правило отказа — D-64) — привязать `write` и
+  `writeln` к объекту `document`. Довод при этом меряется точно: REQ-INPUT-07 копирует **текст**, то есть
+  `navigator.clipboard.writeText`, а его запись без `object` не трогает вовсе (проверено: строка
+  `writeText` молчит при всех трёх формах записи). Красит она `navigator.clipboard.write` — форму
+  того же требования через `ClipboardItem`, то есть «в том числе», а не «единственно». Вывод от
+  этого не меняется: запрещать `write` у любого объекта незачем, объект известен и он `document`.
 - **Комментарий в `.oxlintrc.json` допустим:** oxlint объявляет поддержку комментариев в конфиге
   (`--help`), проба с комментарием разобралась и правила применила; Prettier 3.9.6 комментарий
   сохраняет, `--check` на файле с ним зелёный. Причину запрета есть где записать рядом с ним.
@@ -102,8 +108,9 @@ REQ-DIST-01 · NFR-17 · Q-185 (закрыт D-129)
 записи: закрывается класс, а не найденная форма.
 
 Рядом — комментарий, и он называет три вещи: SEC-21 с D-129 п. 2 и п. 4; почему `write`/`writeln`
-привязаны к `document` (иначе под запрет попадает `navigator.clipboard.write` — REQ-CORE-03, и
-вывести его `allowObjects`-ом не выходит, проба выше); и то, что правило краснеет **и на чтении**
+привязаны к `document` (иначе под запрет попадает `navigator.clipboard.write` — форма
+**REQ-INPUT-07** (D-64) через `ClipboardItem`, и вывести буфер `allowObjects`-ом не выходит, проба
+выше); и то, что правило краснеет **и на чтении**
 `const s = el.innerHTML`, а не только на присваивании, — расширение в сторону строгости,
 согласное с D-129 п. 4 («исключений не заводится»). То же расхождение со строкой задачи
 (в ней — «присваивание») называется в описании PR, чтобы его не приняли за случайность.
@@ -129,10 +136,13 @@ GitHub то, чего в GitHub нет (см. Context). Ни один job, ша�
   на чтении `el.innerHTML` — расхождение со строкой задачи в сторону ложной красноты, а не
   молчания, и оно согласуется с D-129 п. 4 («исключений не заводится»).
 - **Запись `{ "property": "write" }` без объекта** — и она же с `allowObjects`. Поймала бы
-  `d.write(…)` через псевдоним, но запрещает `navigator.clipboard.write`, а перенос значения через
-  буфер обмена это REQ-CORE-03, ядро продукта. Вывести буфер из-под запрета нечем: `allowObjects`
-  с `"clipboard"` и с `"navigator.clipboard"` на пробе всё равно краснеет (Context). Поэтому
-  `write` и `writeln` записаны с `object: "document"`, а псевдоним `document` назван остатком.
+  `d.write(…)` через псевдоним, но запрещает `navigator.clipboard.write` — в том числе форму
+  «Скопировать» через `ClipboardItem`, а копирование результата это **REQ-INPUT-07** (prd.md:96,
+  правило отказа D-64), Must. Основную форму, `writeText`, эта запись не трогает, поэтому довод
+  слабее, чем выглядит, — но он и не нужен сильным: вывести буфер из-под запрета всё равно нечем
+  (`allowObjects` с `"clipboard"` и с `"navigator.clipboard"` на пробе краснеет, Context), а
+  запрещать `write` у любого объекта незачем — объект известен. Поэтому `write` и `writeln`
+  записаны с `object: "document"`, а псевдоним `document` назван остатком.
 - **Свой JS-плагин oxlint** (`dist/plugins.js` в 1.81.0 есть). Выразил бы «только присваивание» и
   псевдонимы, но это новый файл кода вне границ задачи и своя реализация вместо настройки.
 - **Тест RUN-01 на само правило** (по образцу `tests/unit/workflow-timeouts.test.ts`: временный
@@ -151,54 +161,67 @@ GitHub то, чего в GitHub нет (см. Context). Ни один job, ша�
   а не диффом. Правится одна строка — шапка (шаг 2).
 - **Защита `main` и обязательность статусов** — T-014: здесь она только называется в шапке как
   незакрытая, а сами настройки GitHub, `infra/github/branch-protection.json` и
-  `pnpm check:protection` — предмет T-014. **Релизный конвейер** — T-015.
+  `pnpm check:protection` — предмет T-014. Датированный факт в шапке `pr.yml` живёт ровно до
+  T-014 и снимается ею; `pr.yml` в границы T-014 не входит, поэтому просьба снять эти строки
+  ставится в описании PR (см. «Done when»), а отдельной задачи под неё не заводится.
+  **Релизный конвейер** — T-015.
 - **`tests/gates/negative/*` и `pnpm test:gates:negative`** — T-019 и T-071.
 - **Враждебные образцы в корпусе фикстур** (D-129 п. 3) — T-075.
 - **Одиннадцатый пункт контракта ENT-25 `text-only-dom`** — уже записан в data-model; кода
   контракта ещё нет, его заводит своя задача.
 - **`set:html` в `.astro`, `new Function`, `Reflect.set`, псевдоним `document`.** Про `set:html`
-  заводится строка `- [ ] T-256` (шаг 4) — это настоящая дыра в SEC-21, а не придирка: атрибут
+  заводится строка `- [ ] T-256` (шаг 3) — это настоящая дыра в SEC-21, а не придирка: атрибут
   шаблона линтеру не виден. `new Function`, `Reflect.set` и псевдоним `document` — остаток,
   названный честно: строки задачи они не касаются, отдельной задачи под них здесь не заводится.
 - **Мета-тест на само правило линта** (`tests/unit/*`) — за границами задачи (agent-rules §7.3);
-  сторож запрета SEC-21 входит в «готово» T-256 (шаг 4).
+  сторож запрета SEC-21 входит в «готово» T-256 (шаг 3).
 
 ## Steps
 
 **Шаг 1 — коммит.** Запрет SEC-21 в конфиге линта: файлы `.oxlintrc.json` (новый элемент
 `overrides` с `files: ["src/**"]`, правило `no-restricted-properties` уровня `error` на шесть
 имён, комментарий: SEC-21 и D-129 п. 2/п. 4, привязка `write`/`writeln` к `document` ради
-REQ-CORE-03, и что правило краснеет также на чтении `el.innerHTML`).
+REQ-INPUT-07 (D-64), и что правило краснеет также на чтении `el.innerHTML`).
 
-- [ ] verify — `pnpm lint` и `pnpm format:check` зелёные на чистом дереве, затем две негативные
-      пробы. Команды дословные, из корня репозитория, bash:
+- [ ] verify — `pnpm lint` и `pnpm format:check` зелёные на чистом дереве, затем негативная проба
+      **одной непрерывной последовательностью**: `.ts`-файл, его копия вне `src/**`, `.astro`-файл
+      — и только потом уборка. Порядок важен: `.astro`-проба собирается, **пока `.ts`-проба ещё
+      лежит в дереве**, поэтому ожидаемое число строк на этом шаге — двенадцать, а не шесть.
+      Подмен вида `… || printf …` в командах нет: файл либо собрался из источника, либо проба
+      провалена — молчаливого пропуска здесь не бывает (ровно то, чего требует «готово» T-256).
+      Команды дословные, из корня репозитория, bash:
 
       printf '%s\n' "const el = document.body;" "el.innerHTML = 'x';" "el.outerHTML = 'x';" \
         "el.insertAdjacentHTML('beforeend', 'x');" "const f = document.createElement('iframe');" \
         "f.srcdoc = 'x';" "document.write('x');" "document.writeln('x');" \
-        "await navigator.clipboard.write([]);" > src/sec21-probe.ts
-      pnpm lint; echo $?      # ожидается 1 и шесть строк no-restricted-properties: innerHTML,
-                              # outerHTML, insertAdjacentHTML, srcdoc, document.write,
-                              # document.writeln; про navigator.clipboard.write — ни строки
+        "await navigator.clipboard.writeText('x');" "await navigator.clipboard.write([]);" \
+        > src/sec21-probe.ts
+      pnpm lint; echo $?      # ожидается 1 и ровно шесть строк no-restricted-properties, все по
+                              # src/sec21-probe.ts: innerHTML, outerHTML, insertAdjacentHTML,
+                              # srcdoc, document.write, document.writeln; про
+                              # navigator.clipboard.writeText и navigator.clipboard.write — ни строки
+
       cp src/sec21-probe.ts scripts/sec21-probe.ts
-      pnpm lint               # та же проба вне src/** — про неё правило молчит (те же шесть строк,
-                              # ни одной новой): запрет не расползся за границу SEC-21
-      rm src/sec21-probe.ts scripts/sec21-probe.ts
+      pnpm lint               # та же проба вне src/** — про неё правило молчит: по-прежнему ровно
+                              # шесть строк и все по src/sec21-probe.ts, ни одной по scripts/.
+                              # Запрет не расползся за границу SEC-21
+
+      Вторая проба — та же разметка внутри `<script>` компонента `.astro`, и собирается она **до**
+      уборки, из ещё живого `src/sec21-probe.ts`. Класть её в `src/layouts/`, **не в `src/pages/`**:
+      каталог страниц Astro — файловый маршрутизатор, файл там заводит маршрут мимо `src/registry`
+      (ИНВ-06). Сегодня `src/**` состоит из `.astro`, и если правило их не берёт, «готово» не
+      выполнено:
+
+      { printf -- '---\n---\n<script>\n'; cat src/sec21-probe.ts; printf '</script>\n'; } \
+        > src/layouts/Sec21Probe.astro
+      pnpm lint; echo $?      # 1 и ровно двенадцать строк no-restricted-properties: шесть по
+                              # src/sec21-probe.ts (он ещё в дереве) и шесть по
+                              # src/layouts/Sec21Probe.astro — те же шесть имён;
+                              # по scripts/sec21-probe.ts — по-прежнему ни одной
+
+      rm src/sec21-probe.ts scripts/sec21-probe.ts src/layouts/Sec21Probe.astro
       pnpm lint; echo $?      # снова 0
       git status --short      # пусто: ни один файл пробы не уехал в коммит
-
-      Вторая проба — та же разметка внутри `<script>` компонента `.astro`. Класть её в
-      `src/layouts/`, **не в `src/pages/`**: каталог страниц Astro — файловый маршрутизатор, файл
-      там заводит маршрут мимо `src/registry` (ИНВ-06). Сегодня `src/**` состоит из `.astro`, и
-      если правило их не берёт, «готово» не выполнено:
-
-      { printf -- '---\n---\n<script>\n'; cat src/sec21-probe.ts 2>/dev/null \
-        || printf '%s\n' "document.body.innerHTML = 'x';"; printf '</script>\n'; } \
-        > src/layouts/Sec21Probe.astro
-      pnpm lint; echo $?      # 1; шесть строк по src/layouts/Sec21Probe.astro
-      rm src/layouts/Sec21Probe.astro
-      pnpm lint; echo $?      # снова 0
-      git status --short      # пусто
 
 **Шаг 2 — приёмка и одна строка шапки.** Половина «шесть зелёных проверок» закрывается приёмкой:
 файл `.github/workflows/pr.yml` правится ровно в шапке, ни один job не меняется.
@@ -214,6 +237,7 @@ REQ-CORE-03, и что правило краснеет также на чтен�
       # repos/dokey-app/dokey/branches/main/protection` → 404 «Branch not protected»,
       # `gh api repos/dokey-app/dokey/rulesets` → `[]`), то есть исход этих шести проверок
       # влитию пока не препятствует. Состояние проверяется у GitHub, а не по блоку `on:`.
+      # Эти две строки с датой снимает T-014 — вместе с включением защиты.
 
       verify — `git diff .github/workflows/pr.yml` трогает только строки шапки; `pnpm test:unit`
       (`workflow-timeouts.test.ts` читает тот же файл) и `pnpm format:check` зелёные; утверждение
@@ -231,19 +255,27 @@ REQ-CORE-03, и что правило краснеет также на чтен�
         готово — `pnpm test:unit` красный на `set:html`, подсаженном в любой файл
         `src/**/*.astro`, и зелёный на текущем дереве; `.astro` разбирается парсером своего
         инструментария (`@astrojs/compiler`), а не регуляркой, и файл, не разобравшийся по
-        грамматике, — провал проверки, а не молчаливый пропуск; если парсер даёт их даром, тем же
-        проходом закрываются `is:raw` и родня; тот же тест сторожит и сам запрет — в
-        `.oxlintrc.json` есть правило SEC-21 на шесть имён, и его удаление краснит `pnpm test:unit`
+        грамматике, — провал проверки, а не молчаливый пропуск; тот же тест сторожит и сам запрет —
+        в `.oxlintrc.json` есть правило SEC-21 на шесть имён, и его удаление краснит
+        `pnpm test:unit`
+
+      Прочие директивы шаблона (`is:raw` и соседи) в «готово» T-256 намеренно **не названы**:
+      здесь не проверено, что они вообще стоки разметки и что парсер отдаёт их тем же проходом.
+      Обещания «закроются даром» в строке задачи нет — расширение состава решается в T-256 по
+      факту, на живом парсере.
 
 ## Done when
 
 - `pnpm lint` на чистом дереве зелёный, `pnpm format:check` и `pnpm typecheck` зелёные.
-- Проба шага 1 воспроизводится: файл в `src/**` с шестью нарушениями даёт `pnpm lint` код `1` и
-  шесть findings `no-restricted-properties` — по одному на `innerHTML`, `outerHTML`,
-  `insertAdjacentHTML`, `srcdoc`, `document.write`, `document.writeln`; `navigator.clipboard.write`
-  в том же файле молчит; тот же файл в `scripts/` молчит целиком; после удаления пробы `pnpm lint`
-  снова `0`, `git status --short` пуст.
-- Проба в `<script>` компонента `.astro` под `src/layouts/` даёт тот же результат.
+- Проба шага 1 воспроизводится в записанном порядке: файл в `src/**` с шестью нарушениями даёт
+  `pnpm lint` код `1` и ровно шесть findings `no-restricted-properties` — по одному на `innerHTML`,
+  `outerHTML`, `insertAdjacentHTML`, `srcdoc`, `document.write`, `document.writeln`; обе строки
+  буфера обмена (`navigator.clipboard.writeText`, `navigator.clipboard.write`) в том же файле
+  молчат; копия файла в `scripts/` молчит целиком — строк по-прежнему шесть.
+- Проба в `<script>` компонента `.astro` под `src/layouts/`, собранная **до уборки**, пока
+  `.ts`-проба ещё в дереве, даёт код `1` и **двенадцать** строк: шесть по `src/sec21-probe.ts` и
+  шесть по `src/layouts/Sec21Probe.astro`, те же шесть имён. После удаления всех трёх файлов
+  `pnpm lint` снова `0`, `git status --short` пуст.
 - Прогон `pr.yml` на PR задачи: шесть job'ов, шесть `success` — проверено `gh run view`, номер
   прогона назван в описании PR.
 - Шапка `pr.yml` не утверждает о GitHub непроверенного: «мимо них не влить» снято, вместо него —
@@ -251,7 +283,12 @@ REQ-CORE-03, и что правило краснеет также на чтен�
   `rulesets` → `[]`). US-047 крит. 3 в части «мимо проверок не влить» этой задачей **не
   закрывается** и здесь не объявляется закрытым: его закрывают T-014 и T-015.
 - Описание PR называет: номер прогона и шесть имён job'ов; что правило краснеет и на чтении
-  `el.innerHTML` (расширение в сторону строгости, D-129 п. 4); что шапка `pr.yml` уточнена по
-  ответу GitHub.
+  `el.innerHTML` (расширение в сторону строгости, D-129 п. 4); что `write`/`writeln` привязаны к
+  `document` ради REQ-INPUT-07 (D-64) — форма «Скопировать» через `ClipboardItem`; что шапка
+  `pr.yml` уточнена по ответу GitHub — **и что датированная строка шапки снимается вместе с
+  T-014**: T-014 включает защиту `main`, после чего факт «на 2026-09-23 `main` не защищён»
+  протухает, а `pr.yml` в границы T-014 (настройки репозитория,
+  `infra/github/branch-protection.json`, `scripts/check-protection.ts`, `CONTRIBUTING.md`) не
+  входит — снять строку должен исполнитель T-014, и просьба об этом стоит в описании PR.
 - Дифф — три файла: `.oxlintrc.json`, `.github/workflows/pr.yml` (только шапка) и `docs/tasks.md`.
   Правок «попутно» нет: остаток по `set:html` вынесен строкой `- [ ] T-256`.
