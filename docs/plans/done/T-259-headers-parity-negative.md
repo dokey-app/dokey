@@ -82,7 +82,7 @@ Rejected:
       вернулся в `nginx.conf` на уровень `server`; HSTS в `nginx.conf` внутри `location`; HSTS
       переехал — нет в `_headers` и стоит в `nginx.conf` (обе строки в одном приговоре);
       verify: `pnpm test:gates:negative`
-- [ ] Отметка задачи, строка журнала, план в `done/`: files `docs/tasks.md` (строка T-259 →
+- [x] Отметка задачи, строка журнала, план в `done/`: files `docs/tasks.md` (строка T-259 →
       `- [x]`, строка журнала с датой и хешем), `docs/plans/done/T-259-headers-parity-negative.md`;
       verify: чек-лист `.github/pull_request_template.md` целиком, `pnpm lint`,
       `pnpm format:check`, `pnpm typecheck`, `pnpm gate:headers-parity`, `pnpm gates`
