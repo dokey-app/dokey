@@ -138,12 +138,12 @@ export const gate: Gate = {
     }
 
     if (reports.length === 0) {
-      return fail(`lhci collect не оставил ни одного отчёта за ${attempts} сбор(а), код ${code}`);
+      return fail(`lhci collect не оставил ни одного отчёта (попыток ${attempts}, код ${code})`);
     }
     if (short.length > 0) {
       const lines = short.map((line) => `  ${line}`);
       return fail(
-        `набор неполон за ${attempts} сбор(а) — медиана считалась бы не по ${RUNS} прогонам:\n` +
+        `набор неполон (попыток ${attempts}) — медиана считалась бы не по ${RUNS} прогонам:\n` +
           lines.join('\n'),
       );
     }
