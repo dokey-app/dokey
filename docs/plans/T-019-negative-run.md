@@ -61,7 +61,7 @@ Rejected:
 - [x] Остальные нарушающие сборки G-02 — бюджет, чей путь не нашёл файла при нашедших соседях,
       и спецификатор, не разрешающийся в файл сборки (класс, а не одна форма). Файлы:
       `tests/gates/negative/g02-size.test.ts`; verify: `pnpm test:gates:negative`
-- [ ] Нарушающие сборки G-06: две страницы с одинаковым `title`, две с одинаковым
+- [x] Нарушающие сборки G-06: две страницы с одинаковым `title`, две с одинаковым
       `description`, страница с пустым `description`. Файлы:
       `tests/gates/negative/g06-meta.test.ts`; verify: `pnpm test:gates:negative`
 - [ ] Прогон в конвейере PR (D-106 п. 3): job с `timeout-minutes` в `pr.yml`. Файлы:
