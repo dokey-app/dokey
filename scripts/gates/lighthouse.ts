@@ -1,25 +1,188 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { glob, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { type Gate, fail, pass, pending, runGate } from './gate.ts';
 
 const OUT = '.lighthouseci';
 const RESULTS = `${OUT}/assertion-results.json`;
+const RC = 'lighthouserc.json';
+
+/**
+ * Прогонов на маршрут: столько значений попадает в медиану. Число — предмет решения
+ * (D-100, NFR-04), а не настройка: меняется оно вопросом Q-NN, а не правкой здесь.
+ * Держится равным `ci.collect.numberOfRuns` пресета — расхождение валит гейт (T-229).
+ */
+export const RUNS = 3;
+
+/** Пересъёмок сбора, если набор отчётов вышел неполным: Chrome не всегда отпускает профиль. */
+const ATTEMPTS = 2;
 
 interface AssertionResult {
   name: string;
   passed: boolean;
   auditId?: string;
+  auditProperty?: string;
   actual?: number;
   expected?: number;
+  values?: number[];
   level?: string;
+  url?: string;
 }
+
+/** Маршрут отчёта: порт у сервера сбора случайный, и в приговоре от него толку нет. */
+function route(url: string | undefined): string {
+  if (!url) return '?';
+  return URL.canParse(url) ? new URL(url).pathname : url;
+}
+
+/** Ветка `ci.collect` пресета: из неё же `lhci collect` берёт список адресов. */
+export interface Collect {
+  numberOfRuns: number;
+  staticDistDir?: string;
+  url?: string | string[];
+  autodiscoverUrlBlocklist?: string | string[];
+  maxAutodiscoverUrls?: number;
+  staticDirFileDiscoveryDepth?: number;
+}
+
+interface Preset {
+  ci: { collect: Collect };
+}
+
+/** Умолчания `@lhci/cli/src/collect/collect.js` — гейт обязан отбирать адреса так же. */
+const AUTODISCOVER_LIMIT = 5;
+const DISCOVERY_DEPTH = 2;
+/** `IGNORED_FOLDERS_FOR_AUTOFIND` из `collect/fallback-server.js`. */
+const IGNORED_FOLDERS = new Set([
+  'node_modules',
+  'bower_components',
+  'jspm_packages',
+  'web_modules',
+  'tmp',
+]);
 
 function lhci(...args: string[]) {
   return spawnSync('pnpm', ['exec', 'lhci', ...args], {
     encoding: 'utf8',
     shell: process.platform === 'win32',
   });
+}
+
+function listed(value: string | string[] | undefined): string[] {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+/**
+ * html-файлы каталога сборки в порядке обхода `lhci collect`
+ * (`FallbackServer.readHtmlFilesInDirectory`): сначала файлы самого каталога, затем вложенные
+ * папки, кроме скрытых (с точкой в имени) и зависимостей; `depth` — оставшаяся глубина.
+ */
+export function htmlFiles(dir: string, depth: number): string[] {
+  const entries = readdirSync(dir, { withFileTypes: true });
+  const found = entries
+    .filter(
+      (entry) => entry.isFile() && (entry.name.endsWith('.html') || entry.name.endsWith('.htm')),
+    )
+    .map((entry) => entry.name);
+  if (depth <= 0) return found;
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name.includes('.') || IGNORED_FOLDERS.has(entry.name)) continue;
+    found.push(
+      ...htmlFiles(join(dir, entry.name), depth - 1).map((file) => `${entry.name}/${file}`),
+    );
+  }
+  return found;
+}
+
+/**
+ * Маршруты, которые обязан собрать `lhci collect` по этому пресету. Список не пишется здесь
+ * руками: он выведен из того же источника, из которого адреса берёт сам сбор, — явных
+ * `ci.collect.url`, а без них автопоиска по html-файлам `staticDistDir` с тем же чёрным
+ * списком и тем же потолком `maxAutodiscoverUrls` (`collect.js`, `startServerAndDetermineUrls`).
+ * Порт у сбора случайный, поэтому маршрут — это путь, а не адрес целиком.
+ */
+export function plannedRoutes(collect: Collect, files: string[]): string[] {
+  const explicit = listed(collect.url).map(route);
+  if (explicit.length > 0) return [...new Set(explicit)];
+  const blocked = new Set(listed(collect.autodiscoverUrlBlocklist).map(route));
+  const limit = collect.maxAutodiscoverUrls ?? AUTODISCOVER_LIMIT;
+  const paths = files.map((file) => `/${file}`).filter((path) => !blocked.has(path));
+  return [...new Set(limit === 0 ? paths : paths.slice(0, limit))];
+}
+
+/**
+ * Чем набор отчётов расходится с планом сбора. `lhci assert` делит отчёты по `finalUrl`
+ * целиком, вместе с портом (`@lhci/utils/src/assertions.js`: `_.groupBy(lhrs, lhr =>
+ * lhr.finalUrl)`), и медиану считает внутри группы. Группа из одного отчёта — это медиана
+ * по одному прогону: приговор выносит единственный замер, а не середина трёх.
+ *
+ * Считать при этом по собранным отчётам мало: маршрута, по которому не сохранилось ни
+ * одного отчёта, в их списке нет вовсе, и «три отчёта на `/` и ноль на `/health`» выглядит
+ * полным набором. Случай не выдуманный: `runOnUrl` бросает на первом же неудачном прогоне,
+ * цикл по адресам в `runCommand` обрывается, отчёты предыдущих адресов остаются на диске, а
+ * `lhci assert` затем судит один маршрут из двух и молчит об остальных. Поэтому перебираются
+ * маршруты плана, а не собранные адреса, и лишний адрес — тоже расхождение.
+ */
+export function shortOfRuns(finalUrls: string[], runs: number, planned: string[]): string[] {
+  const counted = new Map<string, number>();
+  for (const url of finalUrls) counted.set(url, (counted.get(url) ?? 0) + 1);
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const path of planned) {
+    const groups = [...counted].filter(([url]) => route(url) === path);
+    if (groups.length === 0) {
+      lines.push(`${path}: отчётов 0, а не ${runs} — сбор до маршрута не дошёл`);
+      continue;
+    }
+    for (const [url, count] of groups) {
+      seen.add(url);
+      if (count !== runs) lines.push(`${url}: отчётов ${count}, а не ${runs}`);
+    }
+  }
+  for (const [url, count] of counted) {
+    if (!seen.has(url)) lines.push(`${url}: отчётов ${count}, а маршрута нет в плане сбора`);
+  }
+  return lines;
+}
+
+/** Строка, которую `lhci collect` печатает, обойдя все адреса до единого. */
+const COLLECT_DONE = 'Done running Lighthouse!';
+/** Коды отказа файловой системы, которыми кончается уборка каталога, занятого процессом. */
+const CLEANUP_ERRNO = /\b(?:EBUSY|EPERM|ENOTEMPTY)\b/;
+/** Временный профиль chrome-launcher: `lighthouse.<случайное>` в каталоге temp (`utils.js`). */
+const PROFILE_DIR = /lighthouse\.[A-Za-z0-9]+/;
+
+/**
+ * Можно ли списать ненулевой код `lhci collect` на гонку уборки профиля Chrome. Списывать
+ * её законно только там, где она возможна и где она ничего не отняла у приговора:
+ *   1. Windows — гонка в том, что chrome-launcher убирает временный профиль раньше, чем
+ *      Chrome отпускает файлы (`destroyTmp`); на других системах у ненулевого кода причина
+ *      другая, и её надо читать, а не прощать;
+ *   2. сбор обошёл все адреса — напечатано `Done running Lighthouse!`. Без этой строки обход
+ *      оборвался на каком-то маршруте: `runOnUrl` бросает на первом же неудачном прогоне, и
+ *      отчёты уже пройденных адресов остаются на диске, притворяясь полным набором;
+ *   3. в выводе — именно отказ уборки (EBUSY/EPERM/ENOTEMPTY) именно по каталогу профиля.
+ * Полнота набора отчётов проверяется отдельно и до этого: прощается только код возврата.
+ */
+export function profileCleanupRace(output: string, platform: string): boolean {
+  if (platform !== 'win32') return false;
+  if (!output.includes(COLLECT_DONE)) return false;
+  return CLEANUP_ERRNO.test(output) && PROFILE_DIR.test(output);
+}
+
+async function collected(): Promise<{ reports: string[]; urls: string[] }> {
+  const reports: string[] = [];
+  for await (const entry of glob(`${OUT}/lhr-*.json`)) reports.push(entry);
+  const urls = await Promise.all(
+    reports.map(async (report) => {
+      const lhr = JSON.parse(await readFile(report, 'utf8')) as { finalUrl: string };
+      return lhr.finalUrl;
+    }),
+  );
+  return { reports, urls };
 }
 
 // G-01 «объявленные пороги скорости» — NFR-01, NFR-02, NFR-04. Гейт складывается из двух
@@ -38,56 +201,125 @@ function lhci(...args: string[]) {
 // Один неудачный прогон на загруженной машине не должен красить гейт: краснеть он обязан
 // от продукта, а не от соседнего процесса.
 //
+// **Все прогоны маршрута снимаются одним вызовом `lhci collect`** (T-229). Медиана
+// объявлена в пресете, но считается она внутри группы отчётов с одинаковым `finalUrl`, а
+// свой статический сервер `lhci collect` поднимает на случайном порту
+// (`collect/fallback-server.js`: `server.listen(0)`). Прежний сбор звал `lhci collect -n 1`
+// трижды — и давал три порта, то есть три группы по одному отчёту вместо одной из трёх:
+// медиана вырождалась в единственный замер, и приговор выносил случайный прогон. На раннере
+// GitHub это дало `categories:performance` 0.85 и 0.77 против порога 0.95 на двух сборках,
+// зелёных при перезапуске без единой правки. Полноту набора гейт проверяет сам: маршрут,
+// по которому отчётов не `RUNS`, — это не «почти медиана», а другой приговор.
+//
+// Полнота считается от плана сбора (`plannedRoutes`), а не от собранных отчётов. План гейт
+// выводит из того же источника, из которого адреса берёт `lhci collect`, — пресета и html
+// каталога сборки; руками список маршрутов здесь не пишется. Иначе маршрут, по которому не
+// сохранилось ни одного отчёта, в счёте не участвует вовсе, и набор «`RUNS` отчётов на `/`
+// и ноль на `/health`» проходит как полный, а `lhci assert` судит один маршрут из двух.
+//
 // Сбор и приговор разнесены на два шага вместо одного `lhci autorun`. Причина не в стиле:
-// на Windows chrome-launcher убирает временный профиль раньше, чем Chrome отпускает файлы,
-// и падает с EBUSY уже после того, как отчёты записаны. Код возврата шага сбора говорит
-// в этом случае о состоянии диска, а не о метриках, — поэтому сбор судится по числу
-// собранных отчётов, а пороги проверяет отдельный процесс `lhci assert`, который браузер
-// не поднимает и такой гонки не имеет.
+// на Windows chrome-launcher убирает временный профиль раньше, чем Chrome отпускает файлы
+// (`destroyTmp`), и падает с EBUSY уже после того, как отчёты записаны. Код возврата шага
+// сбора говорит в этом случае о состоянии диска, а не о метриках, — поэтому сбор судится по
+// составу собранных отчётов, а пороги проверяет отдельный процесс `lhci assert`, который
+// браузер не поднимает и такой гонки не имеет. Но списывается ненулевой код только на эту
+// гонку и только по её приметам (`profileCleanupRace`): полный набор отчётов сам по себе
+// оправданием не служит — отчёты пройденных адресов остаются на диске и после обрыва обхода.
+// Неполный набор пересчитывается заново (ATTEMPTS): досдать один прогон в старую группу
+// нельзя — новый сбор поднимет новый порт.
 export const gate: Gate = {
   id: 'G-01',
   command: 'gate:lh',
   claim: 'объявленные пороги скорости соблюдены: TTR, LCP, Lighthouse mobile',
   enabledIn: 'Э-0',
   async run() {
-    if (!existsSync('dist')) return pending('Э-0 — нет каталога dist, сначала pnpm build');
     if (process.env['DOKEY_SKIP_LH'] === '1') {
       return pending('Э-0 — DOKEY_SKIP_LH=1, прогон отключён вручную');
     }
 
-    rmSync(OUT, { recursive: true, force: true });
-    const WANTED = 3;
-    let lost = 0;
-    for (let run = 0; run < WANTED; run += 1) {
-      const collect = lhci('collect', '-n', '1', '--additive');
-      if (collect.status !== 0) lost += 1;
+    const preset = JSON.parse(await readFile(RC, 'utf8')) as Preset;
+    const collect = preset.ci.collect;
+    if (collect.numberOfRuns !== RUNS) {
+      return fail(`${RC}: numberOfRuns ${collect.numberOfRuns}, а гейт судит по ${RUNS} прогонам`);
+    }
+    const dist = collect.staticDistDir ?? 'dist';
+    if (!existsSync(dist)) return pending(`Э-0 — нет каталога ${dist}, сначала pnpm build`);
+
+    const planned = plannedRoutes(
+      collect,
+      htmlFiles(dist, collect.staticDirFileDiscoveryDepth ?? DISCOVERY_DEPTH),
+    );
+    if (planned.length === 0) {
+      return fail(
+        `${RC}: маршрутов для сбора не вышло — ни ci.collect.url, ни html-файлов в ${dist}`,
+      );
     }
 
-    const reports: string[] = [];
-    for await (const entry of glob(`${OUT}/lhr-*.json`)) reports.push(entry);
+    let attempts = 0;
+    let reports: string[] = [];
+    let urls: string[] = [];
+    let short: string[] = [];
+    let output = '';
+    let code: number | null = null;
+    while (attempts < ATTEMPTS) {
+      attempts += 1;
+      rmSync(OUT, { recursive: true, force: true });
+      const run = lhci('collect');
+      code = run.status;
+      output = `${run.stdout ?? ''}${run.stderr ?? ''}`;
+      ({ reports, urls } = await collected());
+      short = shortOfRuns(urls, RUNS, planned);
+      if (reports.length > 0 && short.length === 0) break;
+    }
+
     if (reports.length === 0) {
-      return fail(`lhci collect не оставил ни одного отчёта из ${WANTED} прогонов`);
+      return fail(`lhci collect не оставил ни одного отчёта (попыток ${attempts}, код ${code})`);
+    }
+    if (short.length > 0) {
+      const lines = short.map((line) => `  ${line}`);
+      return fail(
+        `набор не сошёлся с планом сбора (попыток ${attempts}) — маршрутов в плане ${planned.length}, ` +
+          `медиана считалась бы не по ${RUNS} прогонам:\n` +
+          lines.join('\n'),
+      );
+    }
+    // Набор полон — но полный набор не оправдывает ненулевой код сам по себе: отчёты
+    // пройденных адресов остаются на диске и после обрыва обхода.
+    if (code !== 0 && !profileCleanupRace(output, process.platform)) {
+      const lines = output.trimEnd().split('\n').slice(-10);
+      return fail(
+        `lhci collect вернул ${code}, и это не уборка профиля Chrome (попыток ${attempts}):\n` +
+          lines.map((line) => `  ${line}`).join('\n'),
+      );
     }
 
     const assert = lhci('assert');
     if (!existsSync(RESULTS)) {
-      const output = `${assert.stdout ?? ''}${assert.stderr ?? ''}`.trim();
-      return fail(`lhci assert не оставил ${RESULTS}\n${output}`);
+      const verdict = `${assert.stdout ?? ''}${assert.stderr ?? ''}`.trim();
+      return fail(`lhci assert не оставил ${RESULTS}\n${verdict}`);
     }
 
     const results = JSON.parse(await readFile(RESULTS, 'utf8')) as AssertionResult[];
     const broken = results.filter((entry) => !entry.passed && entry.level === 'error');
     if (broken.length > 0) {
-      const lines = broken.map(
-        (entry) => `  ${entry.auditId ?? entry.name}: ${entry.actual} против ${entry.expected}`,
-      );
+      // Маршрут, имя утверждения и все значения прогонов: без них в логе стоит
+      // «categories: 0.85», по которому не видно ни категории, ни маршрута, ни того,
+      // разошлись прогоны между собой или просели все три.
+      const lines = broken.map((entry) => {
+        const name = [entry.auditId ?? entry.name, entry.auditProperty].filter(Boolean).join(':');
+        const runs = entry.values ? ` (прогоны: ${entry.values.join(', ')})` : '';
+        return `  ${route(entry.url)} ${name}: ${entry.actual} против ${entry.expected}${runs}`;
+      });
       return fail(`нарушено утверждений: ${broken.length}\n${lines.join('\n')}`);
     }
     if (assert.status !== 0) {
       return fail(`lhci assert вернул ${assert.status} без разобранных нарушений`);
     }
-    const note = lost > 0 ? `, потеряно прогонов ${lost} (гонка уборки Chrome)` : '';
-    return pass(`отчётов ${reports.length} (${WANTED} прогонов × маршруты), нарушено 0${note}`);
+    const retry = attempts > 1 ? `, сборов ${attempts}` : '';
+    const disk = code === 0 ? '' : `, код сбора ${code}: уборка профиля Chrome после обхода`;
+    return pass(
+      `отчётов ${reports.length}: маршрутов ${planned.length} × прогонов ${RUNS}${retry}${disk}`,
+    );
   },
 };
 
