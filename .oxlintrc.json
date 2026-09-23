@@ -35,6 +35,50 @@
         "no-console": "off",
         "no-await-in-loop": "off"
       }
+    },
+    // SEC-21 (D-129 п. 2): в продуктовом коде разметка из ввода не строится — только
+    // текстовые узлы. Запрет на шесть стоков HTML, `error`, без исключений (D-129 п. 4);
+    // оснастка (`tests/**`, `scripts/**`) под него не попадает — там враждебная разметка
+    // законна. Не гейт: D-129 п. 2 ставит запрет шагом линта.
+    // `write` и `writeln` привязаны к `document` сознательно: запись без `object` красит
+    // и `navigator.clipboard.write` — форму «Скопировать» через `ClipboardItem`, а это
+    // REQ-INPUT-07 (D-64); вывести буфер обмена из-под запрета нечем (`allowObjects`
+    // сверяет список не с той формой, какой записан доступ). Объект здесь известен.
+    // Правило краснеет и на чтении `const s = el.innerHTML`, а не только на присваивании, —
+    // расширение в сторону строгости, согласное с D-129 п. 4.
+    {
+      "files": ["src/**"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "innerHTML",
+            "message": "SEC-21: разметка из ввода не строится — textContent (D-129)"
+          },
+          {
+            "property": "outerHTML",
+            "message": "SEC-21: разметка из ввода не строится — textContent (D-129)"
+          },
+          {
+            "property": "insertAdjacentHTML",
+            "message": "SEC-21: разметка из ввода не строится — insertAdjacentText (D-129)"
+          },
+          {
+            "property": "srcdoc",
+            "message": "SEC-21: документ iframe из строки не собирается (D-129)"
+          },
+          {
+            "object": "document",
+            "property": "write",
+            "message": "SEC-21: document.write запрещён (D-129)"
+          },
+          {
+            "object": "document",
+            "property": "writeln",
+            "message": "SEC-21: document.writeln запрещён (D-129)"
+          }
+        ]
+      }
     }
   ]
 }
