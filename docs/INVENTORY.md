@@ -219,3 +219,4 @@ Q-189 (analytics-spec) · Q-198, Q-200 (test-plan) · Q-212, Q-213 (implementati
 ---
 
 - 2026-09-08 /rules: CLAUDE.md audited
+- 2026-09-23 /rules: CLAUDE.md audited
