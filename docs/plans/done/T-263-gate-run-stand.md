@@ -72,7 +72,8 @@ Rejected: сделать потолки стенда переопределяе�
       verify: `pnpm test:unit` и `pnpm test:gates:negative` зелёные, `pnpm lint`, `pnpm typecheck`
 - [x] Доказать откатом, что оба набора красят названной причиной, а не исходом гейта: временно
       опустить `maxBuffer` стенда до 1 и убедиться, что случаи обоих наборов падают текстом
-      `процесс не вернул кода (ERR_CHILD_PROCESS_STDIO_MAXBUFFER/null)`, а не приговором гейта;
+      `процесс не вернул кода (ERR_CHILD_PROCESS_STDIO_MAXBUFFER/undefined)` — у переполнения
+      буфера `signal` не выставляется вовсе, — а не приговором гейта;
       затем то же временным `PROCESS_TIMEOUT = 1`; правку откатить.
       files `tests/gates/negative/harness.ts` (временно);
       verify: `pnpm test:unit`, `pnpm test:gates:negative` — красные с названной причиной на
