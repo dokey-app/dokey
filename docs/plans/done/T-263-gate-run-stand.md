@@ -77,7 +77,7 @@ Rejected: сделать потолки стенда переопределяе�
       files `tests/gates/negative/harness.ts` (временно);
       verify: `pnpm test:unit`, `pnpm test:gates:negative` — красные с названной причиной на
       правке, зелёные после отката — и `git diff` по `harness.ts` после отката пуст
-- [ ] Закрыть задачу: отметка `- [x]`, строка журнала, строка `- [ ] T-265` про два остальных
+- [x] Закрыть задачу: отметка `- [x]`, строка журнала, строка `- [ ] T-265` про два остальных
       стенда, план — в `docs/plans/done/`.
       files `docs/tasks.md`, `docs/plans/`;
       verify: `pnpm gates`, `pnpm test:unit`, `pnpm test:gates:negative`, чек-лист
