@@ -13,6 +13,10 @@ import { CASE_TIMEOUT, failureOf, gateOn } from './harness.ts';
 // Обе копии печатаются из одной таблицы `POLICY` — тем же приёмом, каким D-107 выводит их из
 // `policy.ts`: шесть общих заголовков в фикстуре не могут разъехаться случайно, разъезжается
 // только то, что случай разводит намеренно. Иначе случай краснел бы не тем, чем кажется.
+//
+// Кеш-лестница копии Cloudflare печатается тем же приёмом из второй таблицы — `CACHE` — и в ту
+// же фикстуру: без частных правил склейку (`concatenated`, T-234) судить не на чем, а отдельная
+// фикстура под неё была бы второй копией таблицы заголовков и разъехалась бы с первой.
 
 const HEADERS = 'infra/headers/_headers';
 const NGINX = 'infra/docker/nginx.conf';
@@ -29,19 +33,49 @@ const POLICY: readonly (readonly [string, string])[] = [
 const HSTS = 'Strict-Transport-Security';
 const HSTS_VALUE = 'max-age=63072000; includeSubDomains; preload';
 
+// Кеш-лестница настоящего `infra/headers/_headers`: набор `/*` задаёт общее значение, каждое
+// частное правило сначала отсоединяет унаследованное строкой `! Cache-Control` и только потом
+// ставит своё. `Cache-Control` гейтом не сверяется (в nginx он задан через `map`), но склейку
+// `concatenated` ловит именно на нём — правило без строки снятия дописало бы своё значение к
+// значению из `/*` через запятую (T-234).
+const CACHE = 'Cache-Control';
+const CACHE_ROOT = 'public, max-age=0, must-revalidate';
+const CACHE_LADDER: readonly (readonly [string, string])[] = [
+  ['/_astro/*', 'public, max-age=31536000, immutable'],
+  ['/fonts/*', 'public, max-age=31536000, immutable'],
+  ['/sw.js', 'no-cache'],
+  ['/robots.txt', 'public, max-age=3600'],
+];
+
+/** Частное правило, в блок которого случаи кладут HSTS: своего блока для этого не заводится. */
+const PRIVATE_RULE = '/sw.js';
+
 /** Где стоит HSTS в копии Cloudflare: в наборе `/*`, в частном правиле или нигде. */
 type InHeaders = 'root' | 'private' | 'none';
 /** Где стоит HSTS в копии nginx: нигде, на уровне `server` или внутри блока `location`. */
 type InNginx = 'none' | 'server' | 'location';
 
-/** Копия политики в диалекте Cloudflare. Отступ ровно два пробела — его требует разбор гейта. */
-function headersFile(hsts: InHeaders): string {
-  const lines = ['# Фикстура RUN-16: пара выведена из таблицы POLICY набора.', '', '/*'];
+/**
+ * Копия политики в диалекте Cloudflare. Отступ ровно два пробела — его требует разбор гейта.
+ *
+ * `concat` — единственный ввод нарушения склейки: перечень путей лестницы, у которых снята
+ * строка `! Cache-Control`. Пустой перечень даёт правильную лестницу, и лишь она отличает
+ * приговор про склейку от кривой фикстуры.
+ */
+function headersFile(hsts: InHeaders, concat: readonly string[] = []): string {
+  const lines = ['# Фикстура RUN-16: пара выведена из таблиц POLICY и CACHE набора.', '', '/*'];
   for (const [name, value] of POLICY) lines.push(`  ${name}: ${value}`);
   if (hsts === 'root') lines.push(`  ${HSTS}: ${HSTS_VALUE}`);
-  // Частное правило ставит только HSTS: одноимённого заголовка в `/*` при этом нет, и склейка
-  // (`concatenated`) в приговор не попадает — случай судит переезд, а не склейку (T-236).
-  if (hsts === 'private') lines.push('', '/sw.js', `  ${HSTS}: ${HSTS_VALUE}`);
+  lines.push(`  ${CACHE}: ${CACHE_ROOT}`);
+  for (const [path, value] of CACHE_LADDER) {
+    lines.push('', path);
+    if (!concat.includes(path)) lines.push(`  ! ${CACHE}`);
+    lines.push(`  ${CACHE}: ${value}`);
+    // Частное правило ставит HSTS в блок кеш-правила, а не в свой: одноимённого заголовка в `/*`
+    // при `private` нет, и склейка (`concatenated`) в приговор не попадает — случай судит
+    // переезд, а не склейку (T-236).
+    if (hsts === 'private' && path === PRIVATE_RULE) lines.push(`  ${HSTS}: ${HSTS_VALUE}`);
+  }
   return `${lines.join('\n')}\n`;
 }
 
@@ -75,10 +109,12 @@ const GONE = 'strict-transport-security: нет в infra/headers/_headers';
 const RETURNED =
   'strict-transport-security: стоит в infra/docker/nginx.conf, хотя это заголовок прода (D-150)';
 
-function pair(hsts: { headers?: InHeaders; nginx?: InNginx } = {}): Record<string, string> {
+function pair(
+  knobs: { headers?: InHeaders; nginx?: InNginx; concat?: readonly string[] } = {},
+): Record<string, string> {
   return {
-    [HEADERS]: headersFile(hsts.headers ?? 'root'),
-    [NGINX]: nginxConf(hsts.nginx ?? 'none'),
+    [HEADERS]: headersFile(knobs.headers ?? 'root', knobs.concat),
+    [NGINX]: nginxConf(knobs.nginx ?? 'none'),
   };
 }
 
@@ -87,7 +123,7 @@ describe('RUN-16 на расходящейся паре копий', () => {
   // фикстуры, а не из внесённого нарушения, — красный по чужой причине засчитался бы за
   // проверку. Исход `pass` **вместе** с кодом 0: код — то, чем гейт пускает конвейер дальше.
   it(
-    'пускает неизменённую пару: шесть заголовков равны, HSTS только на проде',
+    'пускает неизменённую пару: шесть заголовков равны, HSTS только на проде, лестница снимает кеш',
     async () => {
       const { code, verdict, out } = await gateOn('RUN-16', pair());
       expect(verdict.id, out).toBe('RUN-16');
