@@ -50,8 +50,12 @@ const CACHE_LADDER: readonly (readonly [string, string])[] = [
 /** Частное правило, в блок которого случаи кладут HSTS: своего блока для этого не заводится. */
 const PRIVATE_RULE = '/sw.js';
 
-/** Где стоит HSTS в копии Cloudflare: в наборе `/*`, в частном правиле или нигде. */
-type InHeaders = 'root' | 'private' | 'none';
+/**
+ * Где стоит HSTS в копии Cloudflare: в наборе `/*`, в частном правиле, в обоих сразу или нигде.
+ * `both` — единственная раскладка, при которой сверяемый заголовок склеивается: склейка требует
+ * одноимённого заголовка и в `/*`, и в частном правиле.
+ */
+type InHeaders = 'root' | 'private' | 'both' | 'none';
 /** Где стоит HSTS в копии nginx: нигде, на уровне `server` или внутри блока `location`. */
 type InNginx = 'none' | 'server' | 'location';
 
@@ -65,7 +69,7 @@ type InNginx = 'none' | 'server' | 'location';
 function headersFile(hsts: InHeaders, concat: readonly string[] = []): string {
   const lines = ['# Фикстура RUN-16: пара выведена из таблиц POLICY и CACHE набора.', '', '/*'];
   for (const [name, value] of POLICY) lines.push(`  ${name}: ${value}`);
-  if (hsts === 'root') lines.push(`  ${HSTS}: ${HSTS_VALUE}`);
+  if (hsts === 'root' || hsts === 'both') lines.push(`  ${HSTS}: ${HSTS_VALUE}`);
   lines.push(`  ${CACHE}: ${CACHE_ROOT}`);
   for (const [path, value] of CACHE_LADDER) {
     lines.push('', path);
@@ -73,8 +77,10 @@ function headersFile(hsts: InHeaders, concat: readonly string[] = []): string {
     lines.push(`  ${CACHE}: ${value}`);
     // Частное правило ставит HSTS в блок кеш-правила, а не в свой: одноимённого заголовка в `/*`
     // при `private` нет, и склейка (`concatenated`) в приговор не попадает — случай судит
-    // переезд, а не склейку (T-236).
-    if (hsts === 'private' && path === PRIVATE_RULE) lines.push(`  ${HSTS}: ${HSTS_VALUE}`);
+    // переезд, а не склейку. При `both` заголовок есть и там, и тут — склеится.
+    if ((hsts === 'private' || hsts === 'both') && path === PRIVATE_RULE) {
+      lines.push(`  ${HSTS}: ${HSTS_VALUE}`);
+    }
   }
   return `${lines.join('\n')}\n`;
 }
@@ -222,6 +228,22 @@ describe('RUN-16 на расходящейся паре копий', () => {
       const paths = CACHE_LADDER.map(([path]) => path);
       const detail = await failureOf('RUN-16', pair({ concat: paths }));
       expect(detail).toBe(paths.map((path) => concatenates(path, 'cache-control')).join('; '));
+    },
+    CASE_TIMEOUT,
+  );
+
+  // Склейка не ограничена кешем: частное правило ставит сверяемый заголовок, который есть и в
+  // `/*`, — путь получил бы значение дважды через запятую. Приговор обязан назвать **обе**
+  // проблемы, «задан вне /*» и «склеится»: проверки `outsideRoot` и `concatenated` идут по
+  // одному и тому же правилу, и случай пинует, что одна не маскирует другую.
+  it(
+    'валит _headers, где частное правило склеивает сверяемый заголовок, и называет обе проблемы',
+    async () => {
+      const detail = await failureOf('RUN-16', pair({ headers: 'both' }));
+      expect(detail).toBe(
+        `${PRIVATE_RULE}: strict-transport-security задан вне /* — в nginx набор один на все пути;` +
+          ` ${concatenates(PRIVATE_RULE, 'strict-transport-security')}`,
+      );
     },
     CASE_TIMEOUT,
   );

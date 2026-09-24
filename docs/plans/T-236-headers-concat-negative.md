@@ -81,7 +81,7 @@ Rejected:
       четыре правила без неё — приговор называет все четыре в порядке файла; files
       `tests/gates/negative/run16-headers.test.ts`; verify: `pnpm test:gates:negative` красный
       при снятом вызове `concatenated(headersText)` в гейте — и зелёный после возврата правки
-- [ ] Случай склейки сверяемого заголовка: частное правило ставит `Strict-Transport-Security`,
+- [x] Случай склейки сверяемого заголовка: частное правило ставит `Strict-Transport-Security`,
       который есть и в `/*`, — приговор называет обе проблемы, «вне `/*`» и «склеится»; files
       `tests/gates/negative/run16-headers.test.ts`; verify: `pnpm test:gates:negative`
 
