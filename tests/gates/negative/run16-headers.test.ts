@@ -13,6 +13,10 @@ import { CASE_TIMEOUT, failureOf, gateOn } from './harness.ts';
 // Обе копии печатаются из одной таблицы `POLICY` — тем же приёмом, каким D-107 выводит их из
 // `policy.ts`: шесть общих заголовков в фикстуре не могут разъехаться случайно, разъезжается
 // только то, что случай разводит намеренно. Иначе случай краснел бы не тем, чем кажется.
+//
+// Кеш-лестница копии Cloudflare печатается тем же приёмом из второй таблицы — `CACHE` — и в ту
+// же фикстуру: без частных правил склейку (`concatenated`, T-234) судить не на чем, а отдельная
+// фикстура под неё была бы второй копией таблицы заголовков и разъехалась бы с первой.
 
 const HEADERS = 'infra/headers/_headers';
 const NGINX = 'infra/docker/nginx.conf';
@@ -29,19 +33,55 @@ const POLICY: readonly (readonly [string, string])[] = [
 const HSTS = 'Strict-Transport-Security';
 const HSTS_VALUE = 'max-age=63072000; includeSubDomains; preload';
 
-/** Где стоит HSTS в копии Cloudflare: в наборе `/*`, в частном правиле или нигде. */
-type InHeaders = 'root' | 'private' | 'none';
+// Кеш-лестница настоящего `infra/headers/_headers`: набор `/*` задаёт общее значение, каждое
+// частное правило сначала отсоединяет унаследованное строкой `! Cache-Control` и только потом
+// ставит своё. `Cache-Control` гейтом не сверяется (в nginx он задан через `map`), но склейку
+// `concatenated` ловит именно на нём — правило без строки снятия дописало бы своё значение к
+// значению из `/*` через запятую (T-234).
+const CACHE = 'Cache-Control';
+const CACHE_ROOT = 'public, max-age=0, must-revalidate';
+const CACHE_LADDER: readonly (readonly [string, string])[] = [
+  ['/_astro/*', 'public, max-age=31536000, immutable'],
+  ['/fonts/*', 'public, max-age=31536000, immutable'],
+  ['/sw.js', 'no-cache'],
+  ['/robots.txt', 'public, max-age=3600'],
+];
+
+/** Частное правило, в блок которого случаи кладут HSTS: своего блока для этого не заводится. */
+const PRIVATE_RULE = '/sw.js';
+
+/**
+ * Где стоит HSTS в копии Cloudflare: в наборе `/*`, в частном правиле, в обоих сразу или нигде.
+ * `both` — единственная раскладка, при которой сверяемый заголовок склеивается: склейка требует
+ * одноимённого заголовка и в `/*`, и в частном правиле.
+ */
+type InHeaders = 'root' | 'private' | 'both' | 'none';
 /** Где стоит HSTS в копии nginx: нигде, на уровне `server` или внутри блока `location`. */
 type InNginx = 'none' | 'server' | 'location';
 
-/** Копия политики в диалекте Cloudflare. Отступ ровно два пробела — его требует разбор гейта. */
-function headersFile(hsts: InHeaders): string {
-  const lines = ['# Фикстура RUN-16: пара выведена из таблицы POLICY набора.', '', '/*'];
+/**
+ * Копия политики в диалекте Cloudflare. Отступ ровно два пробела — его требует разбор гейта.
+ *
+ * `concat` — единственный ввод нарушения склейки: перечень путей лестницы, у которых снята
+ * строка `! Cache-Control`. Пустой перечень даёт правильную лестницу, и лишь она отличает
+ * приговор про склейку от кривой фикстуры.
+ */
+function headersFile(hsts: InHeaders, concat: readonly string[] = []): string {
+  const lines = ['# Фикстура RUN-16: пара выведена из таблиц POLICY и CACHE набора.', '', '/*'];
   for (const [name, value] of POLICY) lines.push(`  ${name}: ${value}`);
-  if (hsts === 'root') lines.push(`  ${HSTS}: ${HSTS_VALUE}`);
-  // Частное правило ставит только HSTS: одноимённого заголовка в `/*` при этом нет, и склейка
-  // (`concatenated`) в приговор не попадает — случай судит переезд, а не склейку (T-236).
-  if (hsts === 'private') lines.push('', '/sw.js', `  ${HSTS}: ${HSTS_VALUE}`);
+  if (hsts === 'root' || hsts === 'both') lines.push(`  ${HSTS}: ${HSTS_VALUE}`);
+  lines.push(`  ${CACHE}: ${CACHE_ROOT}`);
+  for (const [path, value] of CACHE_LADDER) {
+    lines.push('', path);
+    if (!concat.includes(path)) lines.push(`  ! ${CACHE}`);
+    lines.push(`  ${CACHE}: ${value}`);
+    // Частное правило ставит HSTS в блок кеш-правила, а не в свой: одноимённого заголовка в `/*`
+    // при `private` нет, и склейка (`concatenated`) в приговор не попадает — случай судит
+    // переезд, а не склейку. При `both` заголовок есть и там, и тут — склеится.
+    if ((hsts === 'private' || hsts === 'both') && path === PRIVATE_RULE) {
+      lines.push(`  ${HSTS}: ${HSTS_VALUE}`);
+    }
+  }
   return `${lines.join('\n')}\n`;
 }
 
@@ -75,10 +115,17 @@ const GONE = 'strict-transport-security: нет в infra/headers/_headers';
 const RETURNED =
   'strict-transport-security: стоит в infra/docker/nginx.conf, хотя это заголовок прода (D-150)';
 
-function pair(hsts: { headers?: InHeaders; nginx?: InNginx } = {}): Record<string, string> {
+/** Приговор гейта о склейке одного правила. Имена в нём — в нижнем регистре, как их видит гейт. */
+function concatenates(path: string, name: string): string {
+  return `${path}: ${name} склеится со значением из /* — нет «! ${name}»`;
+}
+
+function pair(
+  knobs: { headers?: InHeaders; nginx?: InNginx; concat?: readonly string[] } = {},
+): Record<string, string> {
   return {
-    [HEADERS]: headersFile(hsts.headers ?? 'root'),
-    [NGINX]: nginxConf(hsts.nginx ?? 'none'),
+    [HEADERS]: headersFile(knobs.headers ?? 'root', knobs.concat),
+    [NGINX]: nginxConf(knobs.nginx ?? 'none'),
   };
 }
 
@@ -87,7 +134,7 @@ describe('RUN-16 на расходящейся паре копий', () => {
   // фикстуры, а не из внесённого нарушения, — красный по чужой причине засчитался бы за
   // проверку. Исход `pass` **вместе** с кодом 0: код — то, чем гейт пускает конвейер дальше.
   it(
-    'пускает неизменённую пару: шесть заголовков равны, HSTS только на проде',
+    'пускает неизменённую пару: шесть заголовков равны, HSTS только на проде, лестница снимает кеш',
     async () => {
       const { code, verdict, out } = await gateOn('RUN-16', pair());
       expect(verdict.id, out).toBe('RUN-16');
@@ -155,6 +202,48 @@ describe('RUN-16 на расходящейся паре копий', () => {
     async () => {
       const detail = await failureOf('RUN-16', pair({ headers: 'none', nginx: 'server' }));
       expect(detail).toBe(`${GONE}; ${RETURNED}`);
+    },
+    CASE_TIMEOUT,
+  );
+
+  // Предмет T-236: частное правило без строки `! Cache-Control` не заменяет значение из `/*`, а
+  // дописывает своё через запятую, и на проде `/_astro/*` отдавал обе половины разом (T-234).
+  // Сборка с таким правилом обязана валить конвейер, а не уезжать на прод.
+  it(
+    'валит _headers, где /_astro/* задаёт Cache-Control без строки снятия',
+    async () => {
+      const detail = await failureOf('RUN-16', pair({ concat: ['/_astro/*'] }));
+      expect(detail).toBe(concatenates('/_astro/*', 'cache-control'));
+    },
+    CASE_TIMEOUT,
+  );
+
+  // Класс, а не найденная форма: «без **любой** строки `! Cache-Control`» — это каждое правило
+  // лестницы, и приговор обязан назвать их все разом, в порядке файла. Остановись гейт на
+  // первом — остальные три чинились бы вслепую, по одному прогону на правило. Перечень берётся
+  // из той же таблицы, что печатает фикстуру: пятая ступень войдёт в случай сама.
+  it(
+    'валит _headers, где строки снятия нет ни у одного правила лестницы, и называет все',
+    async () => {
+      const paths = CACHE_LADDER.map(([path]) => path);
+      const detail = await failureOf('RUN-16', pair({ concat: paths }));
+      expect(detail).toBe(paths.map((path) => concatenates(path, 'cache-control')).join('; '));
+    },
+    CASE_TIMEOUT,
+  );
+
+  // Склейка не ограничена кешем: частное правило ставит сверяемый заголовок, который есть и в
+  // `/*`, — путь получил бы значение дважды через запятую. Приговор обязан назвать **обе**
+  // проблемы, «задан вне /*» и «склеится»: проверки `outsideRoot` и `concatenated` идут по
+  // одному и тому же правилу, и случай пинует, что одна не маскирует другую.
+  it(
+    'валит _headers, где частное правило склеивает сверяемый заголовок, и называет обе проблемы',
+    async () => {
+      const detail = await failureOf('RUN-16', pair({ headers: 'both' }));
+      expect(detail).toBe(
+        `${PRIVATE_RULE}: strict-transport-security задан вне /* — в nginx набор один на все пути;` +
+          ` ${concatenates(PRIVATE_RULE, 'strict-transport-security')}`,
+      );
     },
     CASE_TIMEOUT,
   );
