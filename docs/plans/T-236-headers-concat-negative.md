@@ -77,7 +77,7 @@ Rejected:
       тот же блок `/sw.js`, ожидания пяти случаев T-259 не правятся; files
       `tests/gates/negative/run16-headers.test.ts`; verify: `pnpm test:gates:negative` зелёный,
       сторожевой случай — `pass` вместе с кодом 0
-- [ ] Случаи склейки кеша: `/_astro/*` без `! Cache-Control` — приговор из одной проблемы; все
+- [x] Случаи склейки кеша: `/_astro/*` без `! Cache-Control` — приговор из одной проблемы; все
       четыре правила без неё — приговор называет все четыре в порядке файла; files
       `tests/gates/negative/run16-headers.test.ts`; verify: `pnpm test:gates:negative` красный
       при снятом вызове `concatenated(headersText)` в гейте — и зелёный после возврата правки

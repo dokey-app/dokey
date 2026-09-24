@@ -109,6 +109,11 @@ const GONE = 'strict-transport-security: нет в infra/headers/_headers';
 const RETURNED =
   'strict-transport-security: стоит в infra/docker/nginx.conf, хотя это заголовок прода (D-150)';
 
+/** Приговор гейта о склейке одного правила. Имена в нём — в нижнем регистре, как их видит гейт. */
+function concatenates(path: string, name: string): string {
+  return `${path}: ${name} склеится со значением из /* — нет «! ${name}»`;
+}
+
 function pair(
   knobs: { headers?: InHeaders; nginx?: InNginx; concat?: readonly string[] } = {},
 ): Record<string, string> {
@@ -191,6 +196,32 @@ describe('RUN-16 на расходящейся паре копий', () => {
     async () => {
       const detail = await failureOf('RUN-16', pair({ headers: 'none', nginx: 'server' }));
       expect(detail).toBe(`${GONE}; ${RETURNED}`);
+    },
+    CASE_TIMEOUT,
+  );
+
+  // Предмет T-236: частное правило без строки `! Cache-Control` не заменяет значение из `/*`, а
+  // дописывает своё через запятую, и на проде `/_astro/*` отдавал обе половины разом (T-234).
+  // Сборка с таким правилом обязана валить конвейер, а не уезжать на прод.
+  it(
+    'валит _headers, где /_astro/* задаёт Cache-Control без строки снятия',
+    async () => {
+      const detail = await failureOf('RUN-16', pair({ concat: ['/_astro/*'] }));
+      expect(detail).toBe(concatenates('/_astro/*', 'cache-control'));
+    },
+    CASE_TIMEOUT,
+  );
+
+  // Класс, а не найденная форма: «без **любой** строки `! Cache-Control`» — это каждое правило
+  // лестницы, и приговор обязан назвать их все разом, в порядке файла. Остановись гейт на
+  // первом — остальные три чинились бы вслепую, по одному прогону на правило. Перечень берётся
+  // из той же таблицы, что печатает фикстуру: пятая ступень войдёт в случай сама.
+  it(
+    'валит _headers, где строки снятия нет ни у одного правила лестницы, и называет все',
+    async () => {
+      const paths = CACHE_LADDER.map(([path]) => path);
+      const detail = await failureOf('RUN-16', pair({ concat: paths }));
+      expect(detail).toBe(paths.map((path) => concatenates(path, 'cache-control')).join('; '));
     },
     CASE_TIMEOUT,
   );
