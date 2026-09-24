@@ -1,54 +1,13 @@
-import { execFile } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { promisify } from 'node:util';
+import { readFile } from 'node:fs/promises';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { expand, scriptsOf, specifiersOf } from '../../scripts/gates/size.ts';
+import { CASE_TIMEOUT, gateOn, type GateRun } from '../gates/negative/harness.ts';
 
 // RUN-01. Разбор G-02 (D-88, D-156): скрипт, импорт или файл бюджета, не узнанный разбором,
 // выпадает из счёта молча — гейт недосчитывает, а не падает.
 
-const GATE = resolve('scripts/gates/size.ts');
-const run = promisify(execFile);
-
-type Ran = { status: number; out: string };
-
 function fill(unit: string): string {
   return unit.repeat(Math.ceil((256 * 1024) / unit.length));
-}
-
-// Гейт целиком — отдельным процессом в каталоге фикстуры: `dist` и `.size-limit.json` он
-// берёт из рабочего каталога. Процесс асинхронный, а не `spawnSync`: синхронный запуск
-// держал поток воркера, таймер Vitest при нём не срабатывал, и случай шёл до конца — 37 с
-// при пороге 5 с, утаскивая за собой соседние случаи файла (T-241).
-async function gateOn(files: Record<string, string>): Promise<Ran> {
-  const root = await mkdtemp(join(tmpdir(), 'dokey-g02-'));
-  try {
-    const budget = {
-      name: 'initial JS',
-      measure: 'initial-js',
-      path: 'dist/**/*.html',
-      limit: '40 kB',
-    };
-    await writeFile(join(root, '.size-limit.json'), JSON.stringify([{ ...budget, gzip: true }]));
-    for (const [path, content] of Object.entries(files)) {
-      await mkdir(dirname(join(root, path)), { recursive: true });
-      await writeFile(join(root, path), content);
-    }
-    try {
-      const { stdout } = await run(process.execPath, ['--experimental-strip-types', GATE], {
-        cwd: root,
-        encoding: 'utf8',
-      });
-      return { status: 0, out: stdout };
-    } catch (error) {
-      const failed = error as { code: number; stdout: string };
-      return { status: failed.code, out: failed.stdout };
-    }
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
 }
 
 // Обычный блок комментариев неминифицированного файла: слово `import` в первой строке.
@@ -203,10 +162,16 @@ describe('G-02: статические импорты', () => {
   });
 });
 
+// Бюджет — обычный файл фикстуры, как и `dist`: гейт берёт из рабочего каталога и его тоже.
+const BUDGET = JSON.stringify([
+  { name: 'initial JS', measure: 'initial-js', path: 'dist/**/*.html', limit: '40 kB', gzip: true },
+]);
+
 // Фикстуры обходятся один раз на файл тестов и параллельно, под бюджетом хука: дочерний
 // процесс на случай не укладывался в таймаут 5 с при занятых ядрах (T-241).
 const FIXTURES: Record<string, Record<string, string>> = {
   'классический скрипт и модуль': {
+    '.size-limit.json': BUDGET,
     'dist/index.html':
       '<script src="/shared.js"></script><script type="module" src="/m.js"></script>',
     'dist/shared.js': 'import"./dep.js";',
@@ -217,42 +182,46 @@ const FIXTURES: Record<string, Record<string, string>> = {
       "// import { debug } from './debug.js';\ndocument.body.dataset.theme = 'dark';\n",
   },
   'модуль не разбирается': {
+    '.size-limit.json': BUDGET,
     'dist/index.html': '<script type="module" src="/broken.js"></script>',
     'dist/broken.js': 'import { a } from "./a.js',
   },
 };
 
 describe('G-02: граф маршрута', () => {
-  const ran = new Map<string, Ran>();
+  const ran = new Map<string, GateRun>();
 
   beforeAll(async () => {
     const runs = await Promise.all(
-      Object.entries(FIXTURES).map(async ([fixture, files]): Promise<[string, Ran]> => {
-        return [fixture, await gateOn(files)];
+      Object.entries(FIXTURES).map(async ([fixture, files]): Promise<[string, GateRun]> => {
+        return [fixture, await gateOn('G-02', files)];
       }),
     );
     for (const [fixture, result] of runs) ran.set(fixture, result);
-  }, 60_000);
+  }, CASE_TIMEOUT);
 
   // Фикстура без записанного прогона прошла бы молча: «пусто» за «проверено» не выдаётся.
-  function ranOn(fixture: string): Ran {
+  function ranOn(fixture: string): GateRun {
     const result = ran.get(fixture);
     if (!result) throw new Error(`${fixture}: прогон гейта не записан`);
     return result;
   }
 
+  // Судится приговор из маркера, а не подстрока человеческого текста: подстрока не отличает
+  // «гейт вынес исход» от «процесс умер, напечатав часть вывода».
   it('считает файл классического <script src>, но импортов в нём не ищет', () => {
-    const { status, out } = ranOn('классический скрипт и модуль');
-    expect(out).not.toContain('ПРОВАЛ');
-    expect(status).toBe(0);
+    const { code, verdict, out } = ranOn('классический скрипт и модуль');
+    expect(verdict.status, out).toBe('pass');
+    expect(code, out).toBe(0);
     // shared.js встречен сначала классическим скриптом, потом импортом модуля — обходится.
-    expect(out).toContain('максимум — / (shared.js, m.js, dep.js)');
+    expect(verdict.detail).toContain('максимум — / (shared.js, m.js, dep.js)');
   });
 
   it('валит маршрут на модуле, который не разбирается, и называет файл', () => {
-    const { status, out } = ranOn('модуль не разбирается');
-    expect(status).toBe(1);
-    expect(out).toContain('/: broken.js не разбирается как модуль');
+    const { code, verdict, out } = ranOn('модуль не разбирается');
+    expect(verdict.status, out).toBe('fail');
+    expect(code, out).toBe(1);
+    expect(verdict.detail).toContain('/: broken.js не разбирается как модуль');
   });
 });
 
