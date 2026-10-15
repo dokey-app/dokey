@@ -118,4 +118,4 @@ export function formatSize(bytes: number): string {
 }
 
 /** Синтетический пример до первого ввода. */
-export const EXAMPLE = 'Привет, DoKey! Ввод не покидает вкладку.';
+export const EXAMPLE = 'Привет, DoKey. Ввод не покидает вкладку.';

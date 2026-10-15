@@ -62,3 +62,24 @@ test('CSP разрешает скрипты и запросы только св�
   expect(directive('connect-src')).toBe("connect-src 'self'");
   expect(csp).not.toMatch(/https?:|\*/);
 });
+
+// Правила текстов (docs/product.md, «Тексты»): стоп-слова, извинения и «!» в интерфейсе.
+// Код и данные (<pre>, <code>, <script>, <style>) не проверяются — это не интерфейс.
+const STOP =
+  /(^|[^а-яё])(мгновенно|просто|удобно|безопасно|надёжно|надежно|гарантируем|упс|к сожалению|извините)([^а-яё]|$)|100\s*%|!/i;
+
+test('тексты интерфейса без стоп-слов, извинений и «!»', () => {
+  const found: string[] = [];
+  for (const file of htmlFiles) {
+    const text = readFileSync(file, 'utf8')
+      .replace(/<(script|style|pre|code)\b[\s\S]*?<\/\1>/gi, ' ')
+      .replace(/<!doctype[^>]*>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ');
+    const match = STOP.exec(text);
+    if (match)
+      found.push(
+        `${file}: …${text.slice(Math.max(0, match.index - 30), match.index + 30).trim()}…`,
+      );
+  }
+  expect(found).toEqual([]);
+});
