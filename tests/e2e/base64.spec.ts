@@ -99,3 +99,14 @@ test('файл больше мягкого порога — «Обработат
     'Файл читается в этой вкладке, внешних запросов — 0',
   );
 });
+
+test('клик по чипсу, уже выбранному автоопределением, закрепляет выбор', async ({ page }) => {
+  const input = page.getByLabel('Текст или base64');
+  await input.fill('plain text');
+  await expect(page.getByLabel('Кодировать', { exact: true })).toBeChecked();
+  await page.getByText('Кодировать', { exact: true }).click();
+  await input.fill(Buffer.from('hi there').toString('base64'));
+  await expect(page.locator('[data-output]')).toHaveText(
+    Buffer.from(Buffer.from('hi there').toString('base64')).toString('base64'),
+  );
+});

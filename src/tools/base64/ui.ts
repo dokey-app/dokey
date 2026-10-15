@@ -248,11 +248,6 @@ function mount(root: HTMLElement): void {
       }
       return;
     }
-    if (target.name === 'b64-direction') {
-      userDirection = target.value === 'decode' ? 'decode' : 'encode';
-      runText();
-      return;
-    }
     if (target === urlSafe) {
       run();
       return;
@@ -260,6 +255,18 @@ function mount(root: HTMLElement): void {
     if (target === fileInput && fileInput.files?.[0]) {
       file = fileInput.files[0];
       void readFile(file);
+    }
+  });
+
+  // click, а не change: чипс, уже отмеченный автоопределением, change не порождает,
+  // а ручной выбор должен закрепиться и для него. Выбор стрелками тоже даёт click.
+  direction.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLInputElement && target.name === 'b64-direction') {
+      userDirection = target.value === 'decode' ? 'decode' : 'encode';
+      window.clearTimeout(timer);
+      timer = 0;
+      runText();
     }
   });
 
