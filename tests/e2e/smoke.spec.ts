@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures.ts';
+import { routes } from './pages.ts';
 
 test('главная открывается и называет себя', async ({ page }) => {
   await page.goto('/');
@@ -33,4 +34,16 @@ test('нет маршрута — 404 со своим текстом', async ({ 
 test('sitemap перечисляет главную', async ({ request }) => {
   const xml = await (await request.get('/sitemap.xml')).text();
   expect(xml).toContain('<loc>https://dokey.ru/</loc>');
+});
+
+test('элементы с атрибутом hidden не видны ни на одной странице', async ({ page }) => {
+  for (const route of routes) {
+    await page.goto(route);
+    const visible = await page.$$eval('[hidden]', (els) =>
+      els
+        .filter((el) => getComputedStyle(el).display !== 'none')
+        .map((el) => el.outerHTML.slice(0, 80)),
+    );
+    expect(visible, route).toEqual([]);
+  }
 });

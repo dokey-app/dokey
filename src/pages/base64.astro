@@ -1,0 +1,9 @@
+---
+import ToolPage from '../layouts/ToolPage.astro';
+import { getTool } from '../registry/tools.ts';
+import Base64Tool from '../tools/base64/Base64Tool.astro';
+---
+
+<ToolPage tool={getTool('base64')}>
+  <Base64Tool />
+</ToolPage>
