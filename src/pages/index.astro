@@ -1,20 +1,65 @@
 ---
+import Detector from '../detect/Detector.astro';
 import Base from '../layouts/Base.astro';
 import { tools } from '../registry/tools.ts';
 ---
 
-<Base title="DoKey — утилиты разработчика в браузере" description="Утилиты разработчика в браузере">
+<Base
+  title="DoKey — утилиты разработчика в браузере"
+  description="JSON, JWT, Base64, URL, Unix timestamp, UUID и ULID в одной вкладке. Вставленное распознаётся само, ввод не покидает браузер."
+>
   <h1>DoKey</h1>
-  <p>Утилиты разработчика в браузере</p>
-  {
-    tools.length > 0 && (
-      <ul>
-        {tools.map((tool) => (
+  <p class="lead">Утилиты разработчика в браузере. Ввод не покидает вкладку.</p>
+
+  <Detector />
+
+  <section class="catalog" aria-labelledby="catalog-title">
+    <h2 id="catalog-title">Инструменты</h2>
+    <ul>
+      {
+        tools.map((tool) => (
           <li>
             <a href={`/${tool.id}`}>{tool.name}</a>
+            <p>{tool.title}</p>
           </li>
-        ))}
-      </ul>
-    )
-  }
+        ))
+      }
+    </ul>
+  </section>
 </Base>
+
+<style>
+  .lead {
+    color: var(--text-muted);
+  }
+
+  .catalog {
+    margin-top: var(--space-12);
+  }
+
+  .catalog ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .catalog li {
+    padding: var(--space-4);
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+  }
+
+  .catalog a {
+    font-weight: 600;
+  }
+
+  .catalog p {
+    margin: var(--space-1) 0 0;
+    font: var(--type-ui);
+    color: var(--text-muted);
+  }
+</style>
