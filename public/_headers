@@ -1,0 +1,27 @@
+# Заголовки ответа Cloudflare Workers (static assets). Единственный источник; Astro копирует
+# файл из public/ в dist/ как есть. Строки CSP script-src/connect-src 'self' — техническая
+# опора обещания «ввод не покидает вкладку»; tests/e2e/build.spec.ts их проверяет.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; require-trusted-types-for 'script'
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Cloudflare не заменяет одноимённый заголовок из /*, а дописывает через запятую.
+# Поэтому частное правило сначала снимает унаследованный Cache-Control (`! Cache-Control`).
+/_astro/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/robots.txt
+  ! Cache-Control
+  Cache-Control: public, max-age=3600
