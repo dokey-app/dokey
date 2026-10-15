@@ -3,7 +3,9 @@ import { init, parse } from 'es-module-lexer';
 import { readFileSync } from 'node:fs';
 import { dirname, join, posix } from 'node:path';
 import { gzipSync } from 'node:zlib';
-import { DIST, htmlFiles } from './pages.ts';
+import { staticPaths } from '../../src/registry/sitemap.ts';
+import { tools } from '../../src/registry/tools.ts';
+import { DIST, htmlFiles, routes } from './pages.ts';
 
 // Проверки собранного каталога без браузера.
 const INITIAL_JS_LIMIT = 40 * 1024; // gzip, на страницу
@@ -39,6 +41,11 @@ test('initial JS каждой страницы ≤ 40 KB gzip', async () => {
     if (bytes > INITIAL_JS_LIMIT) over.push(`${file}: ${bytes} B`);
   }
   expect(over).toEqual([]);
+});
+
+test('страницы сборки совпадают с реестром инструментов и staticPaths', () => {
+  const expected = [...staticPaths, ...tools.map((tool) => `/${tool.id}`)].toSorted();
+  expect(routes).toEqual(expected);
 });
 
 test('CSP разрешает скрипты и запросы только своему origin', () => {

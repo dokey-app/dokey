@@ -6,7 +6,9 @@
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
-        "hooks": [{ "type": "command", "command": "sh scripts/lint-changed.sh" }]
+        "hooks": [
+          { "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR/scripts/lint-changed.sh\"" }
+        ]
       }
     ]
   }

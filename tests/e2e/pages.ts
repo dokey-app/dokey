@@ -17,6 +17,7 @@ export const routes = htmlFiles
   .filter((file) => !file.endsWith(`${sep}404.html`))
   .map((file) => {
     const path = relative(DIST, file).split(sep).join('/');
-    return '/' + path.replace(/index\.html$/, '').replace(/\.html$/, '/');
+    // build.format = 'file': index.html → /, jwt.html → /jwt
+    return '/' + path.replace(/(^|\/)index\.html$/, '').replace(/\.html$/, '');
   })
   .toSorted();

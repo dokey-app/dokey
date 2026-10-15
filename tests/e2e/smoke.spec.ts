@@ -1,44 +1,36 @@
-import { expect, test } from '@playwright/test';
-import { BASE_URL } from './preview-server.ts';
+import { expect, test } from './fixtures.ts';
 
-// RUN-03. Каркас уровня на заглушке Э-0: страница открывается, индексация закрыта,
-// сторонних origin ноль (ИНВ-01), несуществующий маршрут отвечает 404, а не отказом.
-test('заглушка открывается и называет себя', async ({ page }) => {
+test('главная открывается и называет себя', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('DoKey');
-  await expect(page).toHaveTitle('DoKey');
+  await expect(page.getByRole('link', { name: 'DoKey' })).toHaveAttribute('href', '/');
 });
 
-test('индексация закрыта до тега релиза', async ({ page }) => {
+test('индексация закрыта до релиза', async ({ page, request }) => {
   await page.goto('/');
-  const robots = page.locator('meta[name="robots"]');
-  await expect(robots).toHaveAttribute('content', 'noindex, nofollow');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
+  expect(await (await request.get('/robots.txt')).text()).toContain('Disallow: /');
 });
 
-test('ни одного стороннего origin на первом экране (ИНВ-01)', async ({ page }) => {
-  const foreign: string[] = [];
-  page.on('request', (request) => {
-    const origin = new URL(request.url()).origin;
-    if (origin !== BASE_URL) foreign.push(request.url());
-  });
+test('счётчик внешних запросов показывает 0', async ({ page }) => {
   await page.goto('/', { waitUntil: 'networkidle' });
-  expect(foreign).toEqual([]);
+  await expect(page.getByText('Внешних запросов:')).toBeVisible();
+  await expect(page.locator('[data-egress-count]')).toHaveText('0');
 });
 
-test('на первом экране нет клиентского JS', async ({ page }) => {
+test('статус-регионы на месте', async ({ page }) => {
   await page.goto('/');
-  const scripts = await page.locator('script').count();
-  expect(scripts).toBe(0);
+  await expect(page.getByRole('status')).toHaveCount(1);
+  await expect(page.getByRole('alert')).toHaveCount(1);
 });
 
-test('страница живости отвечает ok', async ({ page }) => {
-  const response = await page.goto('/health/');
-  expect(response?.status()).toBe(200);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('ok');
-  await expect(page.locator('[data-health="version"]')).toHaveText('0.0.1');
+test('нет маршрута — 404 со своим текстом', async ({ page }) => {
+  const response = await page.goto('/такого-маршрута-нет');
+  expect(response?.status()).toBe(404);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Такого инструмента нет.');
 });
 
-test('маршрута нет — 404, а не отказ сервера', async ({ request }) => {
-  const response = await request.get('/такого-маршрута-нет');
-  expect(response.status()).toBe(404);
+test('sitemap перечисляет главную', async ({ request }) => {
+  const xml = await (await request.get('/sitemap.xml')).text();
+  expect(xml).toContain('<loc>https://dokey.ru/</loc>');
 });

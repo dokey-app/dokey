@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.ts';
 import { BASE_URL } from './preview-server.ts';
 import { routes } from './pages.ts';
 
