@@ -1,12 +1,16 @@
 ---
-// КМП-14. Единственный макет этапа Э-0: заглушка без островов и без клиентского JS.
-// noindex держится до тега релиза (implementation-plan §2.4, снимается задачей T-201).
+// Единственный макет: шапка со счётчиком внешних запросов, статус-регионы, подвал.
+// noindex держится до релиза v1.0.0 (ROADMAP, срез 10).
+import '../styles/tokens.css';
+import '../styles/base.css';
+
 interface Props {
   title: string;
   description: string;
 }
 
 const { title, description } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <html lang="ru">
@@ -15,64 +19,82 @@ const { title, description } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
     <title>{title}</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <slot />
-    <style>
-      :root {
-        color-scheme: light dark;
-        --bg: #ffffff;
-        --fg: #1a1a1a;
-        --muted: #595959;
-        --rule: #d4d4d4;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #101012;
-          --fg: #ededed;
-          --muted: #a1a1a1;
-          --rule: #333336;
-        }
-      }
-
-      body {
-        margin: 0;
-        padding: 3rem 1.5rem;
-        background: var(--bg);
-        color: var(--fg);
-        font:
-          16px/1.6 ui-sans-serif,
-          system-ui,
-          sans-serif;
-      }
-
-      main {
-        margin-inline: auto;
-        max-width: 42rem;
-      }
-
-      h1 {
-        margin: 0 0 0.5rem;
-        font-size: 1.75rem;
-      }
-
-      p {
-        margin: 0 0 1rem;
-        color: var(--muted);
-      }
-
-      hr {
-        border: 0;
-        border-top: 1px solid var(--rule);
-        margin: 2rem 0;
-      }
-
-      code {
-        font-family: ui-monospace, monospace;
-      }
-    </style>
+    <header class="topbar">
+      <a class="brand" href="/">DoKey</a>
+      <p class="egress">Внешних запросов: <span data-egress-count>0</span></p>
+    </header>
+    <main id="main" class="page">
+      <slot />
+    </main>
+    <footer class="footer">
+      <a href="https://github.com/dokey-app/dokey">Исходный код на GitHub</a>
+    </footer>
+    <div class="visually-hidden" role="status" aria-live="polite" data-status></div>
+    <div class="visually-hidden" role="alert" data-alert></div>
+    <script>
+      import '../egress/counter.ts';
+    </script>
   </body>
 </html>
+
+<style>
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    min-height: var(--topbar-height);
+    padding: 0 var(--page-gutter);
+    background: var(--surface-card);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .brand {
+    font: var(--type-ui);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--text-strong);
+    text-decoration: none;
+  }
+
+  .egress {
+    margin: 0;
+    font: var(--type-ui);
+    color: var(--text-muted);
+  }
+
+  .egress span {
+    font-family: var(--font-mono);
+    color: var(--text-strong);
+  }
+
+  .page {
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: var(--space-8) var(--page-gutter) var(--space-12);
+  }
+
+  .footer {
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: var(--space-6) var(--page-gutter);
+    border-top: 1px solid var(--border-subtle);
+    font: var(--type-ui);
+  }
+
+  @media (max-width: 640px) {
+    .topbar,
+    .page,
+    .footer {
+      padding-inline: var(--space-4);
+    }
+  }
+</style>

@@ -6,7 +6,5 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/unit/**/*.test.ts'],
-    // До первого инструмента юнит-тестов нет; убрать вместе с первым тестом.
-    passWithNoTests: true,
   },
 });

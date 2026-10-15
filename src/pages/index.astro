@@ -1,11 +1,20 @@
 ---
 import Base from '../layouts/Base.astro';
+import { tools } from '../registry/tools.ts';
 ---
 
-<Base title="DoKey" description="Утилиты разработчика в браузере">
-  <main>
-    <h1>DoKey</h1>
-    <p>Утилиты разработчика в браузере</p>
-    <p><a href="https://github.com/dokey-app/dokey">Исходный код на GitHub</a></p>
-  </main>
+<Base title="DoKey — утилиты разработчика в браузере" description="Утилиты разработчика в браузере">
+  <h1>DoKey</h1>
+  <p>Утилиты разработчика в браузере</p>
+  {
+    tools.length > 0 && (
+      <ul>
+        {tools.map((tool) => (
+          <li>
+            <a href={`/${tool.id}`}>{tool.name}</a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
 </Base>
