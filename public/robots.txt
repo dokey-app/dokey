@@ -1,3 +1,4 @@
-# Индексация закрыта до тега релиза (implementation-plan §2.4, снимается задачей T-201).
 User-agent: *
-Disallow: /
+Allow: /
+
+Sitemap: https://dokey.ru/sitemap.xml

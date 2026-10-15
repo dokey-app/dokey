@@ -7,10 +7,13 @@ test('главная открывается и называет себя', async
   await expect(page.getByRole('link', { name: 'DoKey' })).toHaveAttribute('href', '/');
 });
 
-test('индексация закрыта до релиза', async ({ page, request }) => {
+test('индексация открыта, robots.txt указывает sitemap', async ({ page, request }) => {
   await page.goto('/');
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
-  expect(await (await request.get('/robots.txt')).text()).toContain('Disallow: /');
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+  const robots = await (await request.get('/robots.txt')).text();
+  expect(robots).toContain('Allow: /');
+  expect(robots).not.toContain('Disallow');
+  expect(robots).toContain('Sitemap: https://dokey.ru/sitemap.xml');
 });
 
 test('счётчик внешних запросов показывает 0', async ({ page }) => {

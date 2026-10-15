@@ -1,6 +1,5 @@
 ---
 // Единственный макет: шапка со счётчиком внешних запросов, статус-регионы, подвал.
-// noindex держится до релиза v1.0.0 (ROADMAP, срез 10).
 import '../styles/tokens.css';
 import '../styles/base.css';
 
@@ -17,7 +16,6 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <title>{title}</title>
