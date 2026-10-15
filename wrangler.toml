@@ -19,8 +19,7 @@ preview_urls = false
 
 [assets]
 directory = "./dist"
-# Заголовки ответа приходят из dist/_headers, который кладёт туда `pnpm build`
-# из единственного источника infra/headers/_headers (ST-03).
+# Заголовки ответа — dist/_headers, скопированный Astro из public/_headers.
 html_handling = "auto-trailing-slash"
 not_found_handling = "404-page"
 

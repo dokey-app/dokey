@@ -1,19 +1,19 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 
-// ADR-01: Astro 7, статический вывод, острова на ванильном TypeScript.
-// Интеграций фреймворков ноль и не появится — D-05, бюджет initial JS 40 KB gzip (G-02).
+// Astro 7, статический вывод, ванильный TypeScript. Интеграций фреймворков нет:
+// бюджет initial JS 40 KB gzip (tests/e2e/build.spec.ts).
 export default defineConfig({
   site: 'https://dokey.ru',
   output: 'static',
   integrations: [],
   build: {
-    // Гейт G-02 считает вес по файлам сборки; инлайн прячет байты от счёта.
+    // CSS отдельными файлами: кешируется immutable и не раздувает HTML.
     inlineStylesheets: 'never',
   },
   vite: {
     build: {
-      // ИНВ-01: ни один сторонний origin не попадает в сборку даже через sourcemap.
+      // Ни один сторонний origin не попадает в сборку даже через sourcemap.
       sourcemap: false,
     },
   },

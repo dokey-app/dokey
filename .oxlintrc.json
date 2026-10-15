@@ -17,14 +17,7 @@
     "typescript/no-explicit-any": "error",
     "typescript/consistent-type-imports": "error"
   },
-  "ignorePatterns": [
-    "dist/**",
-    "node_modules/**",
-    ".astro/**",
-    "docs/**",
-    "claude-flow-v2/**",
-    "templates/**"
-  ],
+  "ignorePatterns": ["dist/**", "node_modules/**", ".astro/**", "docs/**"],
   "overrides": [
     {
       "files": ["scripts/**/*.ts", "tests/**/*.ts", "*.config.ts"],
