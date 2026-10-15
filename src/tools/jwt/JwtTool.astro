@@ -1,0 +1,228 @@
+---
+// Разметка JWT Inspector. Пример разбирается на сборке — виден без JS;
+// относительное время («4 часа назад») и местное время досчитывает ui.ts.
+import { EXAMPLE, claimLabel, decodeJwt, formatInstant } from './logic.ts';
+
+const example = decodeJwt(EXAMPLE);
+if (!example.ok) throw new Error('EXAMPLE в src/tools/jwt/logic.ts не разбирается');
+const jwt = example.value;
+const now = Math.floor(Date.now() / 1000);
+---
+
+<div class="workbench" data-jwt-tool>
+  <div class="pane">
+    <label class="field-label" for="jwt-input">JWT</label>
+    <textarea
+      id="jwt-input"
+      class="input"
+      data-input
+      spellcheck="false"
+      autocomplete="off"
+      autocapitalize="off"
+      placeholder="Вставьте токен"
+      autofocus></textarea>
+    <div class="notice notice-error" role="alert" data-error hidden></div>
+    <div class="clear-row">
+      <button type="button" class="btn" data-clear>Очистить</button>
+    </div>
+  </div>
+
+  <div class="pane">
+    <p class="field-label result-label" data-result-label>Пример</p>
+
+    <div class="result-head">
+      <h2 class="field-label">header</h2>
+      <button type="button" class="btn btn-small" data-copy="header" aria-label="Скопировать header"
+        >Скопировать</button
+      >
+    </div>
+    <pre class="code" data-header tabindex="0">{jwt.header}</pre>
+
+    <div class="result-head">
+      <h2 class="field-label">payload</h2>
+      <button
+        type="button"
+        class="btn btn-small"
+        data-copy="payload"
+        aria-label="Скопировать payload">Скопировать</button
+      >
+    </div>
+    <pre class="code" data-payload tabindex="0">{jwt.payload}</pre>
+
+    <section data-claims-section hidden={jwt.claims.length === 0}>
+      <h2 class="field-label">Время</h2>
+      <dl class="claims" data-claims>
+        {
+          jwt.claims.map((claim) => (
+            <div>
+              <dt>{claim.name}</dt>
+              <dd>
+                <span class="claim-label">{claimLabel(claim, now)}</span>
+                <span class="claim-raw">{`${claim.seconds} · ${formatInstant(claim.seconds, 'UTC')}`}</span>
+              </dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <h2 class="field-label">signature</h2>
+    <pre class="code signature" data-signature tabindex="0">{jwt.signature}</pre>
+    <p class="verdict" data-verdict>Подпись не проверялась</p>
+
+    <details class="verify" data-verify>
+      <summary>Проверить подпись</summary>
+      <p class="hint" data-verify-hint>Ключ нужен только для проверки подписи</p>
+      <label class="field-label" for="jwt-key">Ключ подписи</label>
+      <div class="key-row">
+        <input
+          id="jwt-key"
+          class="key masked"
+          type="text"
+          data-key
+          autocomplete="off"
+          spellcheck="false"
+          autocapitalize="off"
+        />
+        <button type="button" class="btn" data-toggle-key aria-pressed="false">Показать</button>
+      </div>
+      <button type="button" class="btn btn-primary" data-verify-button disabled
+        >Проверить подпись</button
+      >
+    </details>
+  </div>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .workbench {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-6);
+  }
+
+  @media (max-width: 900px) {
+    .workbench {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .clear-row {
+    margin-top: var(--space-3);
+  }
+
+  .result-label {
+    color: var(--text-strong);
+  }
+
+  .result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: var(--space-4) 0 var(--space-2);
+  }
+
+  .pane h2 {
+    margin: var(--space-4) 0 var(--space-2);
+  }
+
+  .result-head h2 {
+    margin: 0;
+  }
+
+  .signature {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .claims {
+    margin: 0;
+  }
+
+  /* Строки claims пересоздаёт ui.ts — scoped-стили до них не дотягиваются. */
+  .claims :global(div) {
+    display: grid;
+    grid-template-columns: 3em minmax(0, 1fr);
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .claims :global(dt) {
+    font-family: var(--font-mono);
+    color: var(--text-strong);
+  }
+
+  .claims :global(dd) {
+    margin: 0;
+  }
+
+  .claims :global(.claim-label),
+  .claims :global(.claim-raw) {
+    display: block;
+  }
+
+  .claims :global(.claim-raw) {
+    font: var(--type-ui);
+    color: var(--text-muted);
+  }
+
+  .verdict {
+    margin: var(--space-3) 0;
+    font-weight: 600;
+    color: var(--text-strong);
+  }
+
+  .verdict.ok {
+    color: var(--text-success);
+  }
+
+  .verdict.bad {
+    color: var(--text-danger);
+  }
+
+  .verify {
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+  }
+
+  .verify summary {
+    font: var(--type-ui);
+    cursor: pointer;
+  }
+
+  .hint {
+    margin: var(--space-3) 0;
+    font: var(--type-ui);
+    color: var(--text-muted);
+  }
+
+  .key-row {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  .key {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--control-height-md);
+    padding: 0 var(--space-3);
+    font: var(--type-code);
+    color: var(--text-strong);
+    background: var(--surface-card);
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-md);
+  }
+
+  /* Маска без type="password": менеджер паролей не предлагает сохранить ключ подписи. */
+  .masked {
+    -webkit-text-security: disc;
+    text-security: disc;
+  }
+</style>

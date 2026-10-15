@@ -24,6 +24,10 @@ for (const route of routes) {
 
     await page.goto(route, { waitUntil: 'networkidle' });
     const historyBefore = await page.evaluate(() => history.length);
+    // Свёрнутые блоки (например, поле ключа подписи) тоже получают ввод.
+    await page.evaluate(() => {
+      for (const details of document.querySelectorAll('details')) details.open = true;
+    });
 
     const fields = page.locator(
       'textarea, input:not([type]), input[type=text], input[type=search], input[type=url], input[type=password], input[type=number]',
