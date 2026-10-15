@@ -1,0 +1,32 @@
+---
+// Иконка Lucide (ISC), встроенная в HTML на сборке: в браузер не попадает ни библиотека, ни
+// запрос. Штрих 1.75, цвет — currentColor (дизайн-система, «Iconography»). Только украшение:
+// смысл всегда несёт текст рядом, поэтому aria-hidden.
+import { readFileSync } from 'node:fs';
+
+interface Props {
+  name: string;
+  size?: number;
+}
+
+const { name, size = 16 } = Astro.props;
+if (!/^[a-z0-9-]+$/.test(name)) throw new Error(`Icon: недопустимое имя «${name}»`);
+const svg = readFileSync(`node_modules/lucide-static/icons/${name}.svg`, 'utf8');
+const inner = svg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
+---
+
+<svg
+  class="icon"
+  xmlns="http://www.w3.org/2000/svg"
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.75"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+  set:html={inner}
+/>

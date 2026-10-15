@@ -1,5 +1,6 @@
 ---
 // Разметка JSON Workbench. Пример форматируется на сборке — виден без JS.
+import Icon from '../../ui/Icon.astro';
 import { EXAMPLE, parseJson, stringify } from './logic.ts';
 
 const parsed = parseJson(EXAMPLE);
@@ -8,66 +9,85 @@ const example = stringify(parsed.value, { indent: 2, sortKeys: false });
 ---
 
 <div class="workbench" data-json-tool>
-  <div class="pane">
-    <label class="field-label" for="json-input">JSON</label>
-    <textarea
-      id="json-input"
-      class="input"
-      data-input
-      spellcheck="false"
-      autocomplete="off"
-      autocapitalize="off"
-      placeholder="Вставьте или введите JSON"
-      autofocus></textarea>
-    <div class="notice notice-error" role="alert" data-error hidden>
-      <span data-error-text></span>
-      <div>
-        <button type="button" class="btn btn-small" data-goto-error>Перейти к ошибке</button>
+  <section class="card">
+    <div class="card-head">
+      <label class="card-title" for="json-input">JSON</label>
+      <span class="count-badge" data-char-count>0&nbsp;симв.</span>
+    </div>
+    <div class="card-body">
+      <textarea
+        id="json-input"
+        class="input"
+        data-input
+        spellcheck="false"
+        autocomplete="off"
+        autocapitalize="off"
+        placeholder="Вставьте или введите JSON"
+        autofocus></textarea>
+      <div class="notice notice-error" role="alert" data-error hidden>
+        <span data-error-text></span>
+        <div>
+          <button type="button" class="btn btn-small" data-goto-error>Перейти к ошибке</button>
+        </div>
+      </div>
+      <div class="notice notice-warning" data-threshold hidden>
+        <span data-threshold-text></span>
+        <div>
+          <button type="button" class="btn btn-primary" data-process hidden>Обработать</button>
+        </div>
       </div>
     </div>
-    <div class="notice notice-warning" data-threshold hidden>
-      <span data-threshold-text></span>
-      <div>
-        <button type="button" class="btn btn-primary" data-process hidden>Обработать</button>
-      </div>
-    </div>
-  </div>
+  </section>
 
-  <div class="pane">
-    <div class="toolbar">
-      <fieldset class="chips">
-        <legend class="visually-hidden">Вид результата</legend>
-        <label><input type="radio" name="json-mode" value="format" checked />Форматировать</label>
-        <label><input type="radio" name="json-mode" value="minify" />Минифицировать</label>
-      </fieldset>
-      <label class="check"><input type="checkbox" data-sort />Сортировать ключи</label>
-    </div>
-    <div class="result-head">
-      <h2 class="field-label" data-result-label>Пример</h2>
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title" data-result-label>Пример</h2>
       <div class="actions">
-        <button type="button" class="btn btn-primary" data-copy>Скопировать</button>
-        <button type="button" class="btn" data-clear>Очистить</button>
+        <button type="button" class="btn btn-small" data-copy>
+          <Icon name="copy" /><span class="btn-text">Скопировать</span>
+        </button>
+        <button type="button" class="btn btn-small btn-ghost" data-clear>
+          <Icon name="eraser" /><span class="btn-text">Очистить</span>
+        </button>
       </div>
     </div>
-    <pre class="code" data-output tabindex="0" aria-labelledby="json-result">{example}</pre>
-    <span id="json-result" class="visually-hidden">Результат</span>
-  </div>
+    <div class="card-body">
+      <div class="toolbar">
+        <fieldset class="segmented">
+          <legend class="visually-hidden">Вид результата</legend>
+          <label><input type="radio" name="json-mode" value="format" checked />Форматировать</label>
+          <label><input type="radio" name="json-mode" value="minify" />Минифицировать</label>
+        </fieldset>
+        <label class="check"><input type="checkbox" data-sort />Сортировать ключи</label>
+      </div>
+      <pre
+        class="code"
+        data-output
+        tabindex="0"
+        role="region"
+        aria-label="Результат">{example}</pre>
+    </div>
+  </section>
 </div>
 
-<section class="tree-section" data-tree-section hidden>
-  <div class="result-head">
-    <h2 class="field-label">Дерево</h2>
+<section class="card tree-card" data-tree-section hidden>
+  <div class="card-head">
+    <h2 class="card-title">Дерево</h2>
     <div class="actions">
       <button type="button" class="btn btn-small" data-expand>Развернуть</button>
       <button type="button" class="btn btn-small" data-collapse>Свернуть</button>
     </div>
   </div>
-  <div class="pathbar">
-    <span class="field-label">Путь</span>
-    <code data-selected-path>$</code>
-    <button type="button" class="btn btn-small" data-copy-path>Скопировать путь</button>
+  <div class="card-body">
+    <div class="pathbar">
+      <span class="pathbar-label">Путь</span>
+      <code data-selected-path>$</code>
+      <button type="button" class="btn btn-small" data-copy-path>
+        <Icon name="copy" /><span class="btn-text">Скопировать путь</span>
+      </button>
+    </div>
+    <div class="code tree" data-tree></div>
   </div>
-  <div class="code tree" data-tree></div>
 </section>
 
 <script>
@@ -75,59 +95,12 @@ const example = stringify(parsed.value, { indent: 2, sortKeys: false });
 </script>
 
 <style>
-  .workbench {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-6);
-    margin-top: var(--space-6);
-  }
-
-  @media (max-width: 900px) {
-    .workbench {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
-  .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-4);
-    margin-bottom: var(--space-3);
-  }
-
-  .check {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    min-height: var(--target-min);
-    font: var(--type-ui);
-    cursor: pointer;
-  }
-
-  .result-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    margin-bottom: var(--space-2);
-  }
-
-  .result-head h2 {
-    margin: 0;
-  }
-
-  .actions {
-    display: flex;
-    gap: var(--space-2);
+  .tree-card {
+    margin-top: var(--space-4);
   }
 
   [data-output] {
     max-height: 640px;
-  }
-
-  .tree-section {
-    margin-top: var(--space-8);
   }
 
   .tree {
@@ -197,8 +170,9 @@ const example = stringify(parsed.value, { indent: 2, sortKeys: false });
     margin-bottom: var(--space-2);
   }
 
-  .pathbar .field-label {
-    margin: 0;
+  .pathbar-label {
+    font: var(--type-ui);
+    color: var(--text-muted);
   }
 
   .pathbar code {

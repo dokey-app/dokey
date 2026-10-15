@@ -1,12 +1,12 @@
+/* Атрибут hidden сильнее любого display из классов (.chips, .progress и т. п.). */
+[hidden] {
+  display: none !important;
+}
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
-}
-
-/* Атрибут hidden сильнее любого display из классов (.chips, .progress и т. п.). */
-[hidden] {
-  display: none !important;
 }
 
 html {
@@ -20,17 +20,20 @@ body {
   color: var(--text-body);
   background: var(--surface-page);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 h1 {
-  margin: 0 0 var(--space-3);
+  margin: 0 0 var(--space-2);
   font: var(--type-h1);
+  letter-spacing: -0.025em;
   color: var(--text-strong);
 }
 
 h2 {
   margin: var(--space-8) 0 var(--space-3);
   font: var(--type-h2);
+  letter-spacing: -0.02em;
   color: var(--text-strong);
 }
 
@@ -73,29 +76,95 @@ samp {
   border: 0;
 }
 
-/* Элементы управления, общие для всех инструментов. */
+/* --- Иконки (Icon.astro): наследуют цвет текста --- */
+
+.icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  stroke: currentcolor;
+  vertical-align: -3px;
+}
+
+/* --- Подписи и заголовки блоков: обычный регистр, капс в системе — только служебный --- */
+
+.field-label {
+  display: block;
+  margin: 0 0 var(--space-2);
+  font: var(--type-ui);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+/* --- Карточка: поверхность, граница, радиус 14, тень xs; шапка — строка с границей --- */
+
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.card-title {
+  margin: 0;
+  font: var(--type-ui);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.card-body {
+  padding: var(--space-4);
+}
+
+.card + .card {
+  margin-top: var(--space-4);
+}
+
+/* В двухколоночной раскладке соседние карточки стоят рядом, а не стопкой. */
+.workbench > .card + .card {
+  margin-top: 0;
+}
+
+/* --- Кнопки --- */
 
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   min-height: var(--control-height-md);
   padding: 0 var(--control-pad-x-md);
   font: var(--type-ui);
   color: var(--text-strong);
+  text-decoration: none;
   background: var(--surface-card);
-  border: 1px solid var(--border-control);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-standard);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
 }
 
 .btn:hover {
   background: var(--surface-hover);
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.btn:active {
+  background: var(--surface-active);
+  transform: translateY(0.5px);
 }
 
 .btn-primary {
@@ -108,11 +177,80 @@ samp {
   background: var(--action-primary-hover);
 }
 
+.btn-primary:active {
+  background: var(--action-primary-active);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
 .btn-small {
-  min-height: var(--target-min);
+  min-height: 28px;
   padding: 0 var(--space-2);
+  gap: var(--space-1);
   font: var(--type-label);
 }
+
+.btn-small .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --- Сегментированный переключатель режимов (Tabs системы): радиокнопки внутри --- */
+
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 0;
+  padding: 3px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.segmented label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 var(--space-3);
+  font: var(--type-ui);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.segmented label:hover {
+  color: var(--text-strong);
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented label:has(input:checked) {
+  color: var(--text-strong);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-xs);
+}
+
+.segmented label:has(input:focus-visible) {
+  box-shadow: var(--ring-focus);
+}
+
+/* --- Чипсы-кандидаты (Tag системы, pill): только на главной, где это выбор из предложенного --- */
 
 .chips {
   display: inline-flex;
@@ -126,46 +264,89 @@ samp {
 .chips label {
   display: inline-flex;
   align-items: center;
-  min-height: var(--control-height-md);
+  min-height: 30px;
   padding: 0 var(--space-3);
   font: var(--type-ui);
-  border: 1px solid var(--border-control);
+  color: var(--text-body);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-pill);
   cursor: pointer;
+}
+
+.chips label:hover {
+  background: var(--surface-hover);
 }
 
 .chips input {
   position: absolute;
   opacity: 0;
+  pointer-events: none;
 }
 
 .chips label:has(input:checked) {
-  color: var(--text-on-accent);
-  background: var(--action-primary);
-  border-color: var(--action-primary);
+  color: var(--text-link);
+  background: var(--surface-accent-soft);
+  border-color: var(--border-accent);
 }
 
 .chips label:has(input:focus-visible) {
   box-shadow: var(--ring-focus);
 }
 
-.field-label {
-  display: block;
-  margin-bottom: var(--space-2);
+/* --- Бейджи: статус словом и точкой, не одним цветом --- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 var(--space-2);
   font: var(--type-label);
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
 }
+
+.badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: currentcolor;
+  border-radius: 50%;
+}
+
+.badge-success {
+  color: var(--text-success);
+  background: var(--surface-success);
+}
+
+.badge-danger {
+  color: var(--text-danger);
+  background: var(--surface-danger);
+}
+
+/* Счётчик символов в шапке карточки ввода. */
+.count-badge {
+  padding: 2px var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+/* --- Поля и вывод --- */
 
 .code {
   margin: 0;
-  padding: var(--space-4);
+  padding: var(--space-3) var(--space-4);
   font: var(--type-code);
   color: var(--code-fg);
   background: var(--surface-code);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: auto;
   white-space: pre;
 }
@@ -174,17 +355,18 @@ textarea.input {
   display: block;
   width: 100%;
   min-height: 320px;
-  padding: var(--space-4);
+  padding: var(--space-3);
   font: var(--type-code);
   color: var(--text-strong);
   background: var(--surface-card);
   border: 1px solid var(--border-control);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   resize: vertical;
 }
 
 textarea.input:focus-visible {
-  border-radius: var(--radius-lg);
+  border-color: var(--focus-ring);
+  border-radius: var(--radius-md);
 }
 
 .notice {
@@ -197,6 +379,7 @@ textarea.input:focus-visible {
 
 .notice-error {
   color: var(--text-danger);
+  background: var(--surface-danger);
 }
 
 .notice-warning {
@@ -205,4 +388,43 @@ textarea.input:focus-visible {
 
 .notice .btn {
   margin-top: var(--space-2);
+}
+
+/* --- Раскладка инструмента: две равные колонки, на узком — стопкой --- */
+
+.workbench {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+  margin-top: var(--space-6);
+}
+
+@media (max-width: 900px) {
+  .workbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target-min);
+  font: var(--type-ui);
+  cursor: pointer;
 }

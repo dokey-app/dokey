@@ -1,4 +1,5 @@
 import { tools } from '../registry/tools.ts';
+import { showCharCount } from '../ui/char-count.ts';
 import { copyText } from '../ui/copy.ts';
 import { announce } from '../ui/status.ts';
 import { DETECT_LIMIT_CHARS, choose, detect, type Candidate, type CandidateId } from './detect.ts';
@@ -70,6 +71,7 @@ function mount(): void {
 
   function run(): void {
     const text = input.value;
+    showCharCount(document.querySelector('[data-char-count]'), text);
     tooBig.hidden = text.length <= DETECT_LIMIT_CHARS;
     tooBig.textContent = tooBig.hidden
       ? ''

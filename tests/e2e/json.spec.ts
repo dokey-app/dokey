@@ -10,9 +10,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('до ввода — пример, поле ввода в фокусе', async ({ page }) => {
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'Форматирование и проверка JSON',
-  );
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('JSON Workbench');
   await expect(page.getByLabel('JSON', { exact: true })).toBeFocused();
   await expect(page.locator('[data-result-label]')).toHaveText('Пример');
   await expect(page.locator('[data-output]')).toContainText('12345678901234567890');

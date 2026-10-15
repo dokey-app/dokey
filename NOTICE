@@ -4,5 +4,11 @@ Copyright 2026 The DoKey Authors
 This product includes software developed by The DoKey Authors,
 licensed under the Apache License, Version 2.0 (see LICENSE).
 
-Third-party components are listed with their own licences in the SBOM
-published with each release (syft, see .github/workflows/release.yml).
+Third-party components bundled into the site:
+
+- Manrope, (c) The Manrope Project Authors — SIL Open Font License 1.1
+  (via @fontsource-variable/manrope).
+- JetBrains Mono, (c) JetBrains s.r.o. — SIL Open Font License 1.1
+  (via @fontsource-variable/jetbrains-mono).
+- Lucide icons, (c) Lucide Contributors — ISC License (via lucide-static;
+  icons are inlined into HTML at build time).

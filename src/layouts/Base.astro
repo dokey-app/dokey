@@ -1,8 +1,11 @@
 ---
 // Единственный макет: шапка со счётчиком внешних запросов, статус-регионы, подвал.
 // noindex держится до релиза v1.0.0 (ROADMAP, срез 10).
+import '@fontsource-variable/manrope';
+import '@fontsource-variable/jetbrains-mono';
 import '../styles/tokens.css';
 import '../styles/base.css';
+import Icon from '../ui/Icon.astro';
 
 interface Props {
   title: string;
@@ -25,8 +28,11 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="/">DoKey</a>
+      <a class="brand" href="/"
+        ><span class="brand-do">Do</span><span class="brand-key">Key</span></a
+      >
       <p class="egress">
+        <Icon name="shield-check" />
         Внешних запросов: <span data-egress-count>0</span> ·
         <a href="/how-to-verify">Как это проверить</a>
       </p>
@@ -57,22 +63,39 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     gap: var(--space-1) var(--space-4);
     min-height: var(--topbar-height);
     padding: 0 var(--page-gutter);
-    background: var(--surface-card);
+    /* Единственное место системы с размытием: полупрозрачная шапка поверх контента. */
+    background: color-mix(in srgb, var(--surface-card) 88%, transparent);
+    backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border-subtle);
   }
 
+  /* Вордмарк набором: Manrope 800, трекинг −0.03em, вторая часть — акцентом. */
   .brand {
-    font: var(--type-ui);
-    font-size: var(--text-lg);
-    font-weight: 700;
-    color: var(--text-strong);
+    font: 800 20px / 1 var(--font-sans);
+    letter-spacing: -0.03em;
     text-decoration: none;
   }
 
+  .brand-do {
+    color: var(--text-strong);
+  }
+
+  .brand-key {
+    color: var(--text-link);
+  }
+
   .egress {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 6px;
     margin: 0;
     font: var(--type-ui);
     color: var(--text-muted);
+  }
+
+  .egress :global(.icon) {
+    color: var(--text-success);
   }
 
   .egress span {
