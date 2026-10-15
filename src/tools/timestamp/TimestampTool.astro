@@ -1,0 +1,163 @@
+---
+// Разметка Unix Timestamp Converter. Пример считается на сборке без местного времени
+// (оно зависит от браузера) — ui.ts досчитывает его и «относительно сейчас».
+import { EXAMPLE, parseTimestamp, rows } from './logic.ts';
+
+const parsed = parseTimestamp(EXAMPLE);
+if (!parsed.ok) throw new Error('EXAMPLE в src/tools/timestamp/logic.ts не разбирается');
+const example = rows(parsed.ms, false, null);
+---
+
+<div class="workbench" data-ts-tool>
+  <div class="pane">
+    <label class="field-label" for="ts-input">Метка времени или дата</label>
+    <input
+      id="ts-input"
+      class="line"
+      type="text"
+      inputmode="text"
+      data-input
+      spellcheck="false"
+      autocomplete="off"
+      autocapitalize="off"
+      placeholder="1767236400 или 2026-01-01T03:00:00Z"
+      autofocus
+    />
+    <div class="controls">
+      <fieldset class="chips" data-units hidden>
+        <legend class="visually-hidden">Единицы числа</legend>
+        <label><input type="radio" name="ts-unit" value="s" checked />Секунды</label>
+        <label><input type="radio" name="ts-unit" value="ms" />Миллисекунды</label>
+      </fieldset>
+      <button type="button" class="btn" data-now>Вставить текущее</button>
+    </div>
+    <div class="notice notice-error" role="alert" data-error hidden></div>
+  </div>
+
+  <div class="pane">
+    <div class="result-head">
+      <h2 class="field-label" data-result-label>Пример</h2>
+      <button type="button" class="btn" data-clear>Очистить</button>
+    </div>
+    <p class="note" data-note hidden>Зона не указана — дата прочитана как UTC</p>
+    <dl class="times" data-rows>
+      {
+        example.map((row) => (
+          <div class="row">
+            <dt>{row.name}</dt>
+            <dd>
+              <code>{row.value}</code>
+              <button
+                type="button"
+                class="btn btn-small"
+                data-copy-name={row.name}
+                aria-label={`Скопировать: ${row.name}`}
+              >
+                Скопировать
+              </button>
+            </dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .workbench {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-6);
+  }
+
+  @media (max-width: 900px) {
+    .workbench {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .line {
+    display: block;
+    width: 100%;
+    min-height: var(--control-height-lg, 40px);
+    padding: 0 var(--space-4);
+    font: var(--type-code);
+    font-size: var(--text-base);
+    color: var(--text-strong);
+    background: var(--surface-card);
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-lg);
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+  }
+
+  .result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+  }
+
+  .result-head h2 {
+    margin: 0;
+  }
+
+  .note {
+    margin: 0 0 var(--space-2);
+    font: var(--type-ui);
+    color: var(--text-warning);
+  }
+
+  /* Строки пересоздаёт ui.ts — стили через :global. */
+  .times {
+    margin: 0;
+  }
+
+  .times :global(.row) {
+    display: grid;
+    grid-template-columns: 10em minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: center;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .times :global(dt) {
+    font: var(--type-ui);
+    color: var(--text-muted);
+  }
+
+  .times :global(dd) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    min-width: 0;
+    margin: 0;
+  }
+
+  .times :global(code) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--text-strong);
+  }
+
+  @media (max-width: 480px) {
+    .times :global(.row) {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-1);
+    }
+  }
+</style>

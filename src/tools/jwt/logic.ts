@@ -2,6 +2,7 @@
 // через WebCrypto. Алгоритм берётся из `alg` и никогда не подменяется.
 
 import { describeError, parseJson, stringify, type JsonNode } from '../json/logic.ts';
+import { formatInstant, relative } from '../timestamp/logic.ts';
 
 export type Segment = 'header' | 'payload';
 
@@ -146,50 +147,7 @@ export async function verifyHmac(token: DecodedJwt, hash: string, key: string): 
 
 // --- Время ---
 
-export function formatInstant(seconds: number, timeZone: 'UTC' | undefined): string {
-  const date = new Date(seconds * 1000);
-  const parts = new Intl.DateTimeFormat('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-    ...(timeZone ? { timeZone } : {}),
-  }).formatToParts(date);
-  const get = (type: Intl.DateTimeFormatPartTypes): string =>
-    parts.find((p) => p.type === type)?.value ?? '';
-  const zone = timeZone ?? utcOffset(date);
-  return `${get('day')} ${get('month')} ${get('year')}, ${get('hour')}:${get('minute')} ${zone}`;
-}
-
-function utcOffset(date: Date): string {
-  const minutes = -date.getTimezoneOffset();
-  if (minutes === 0) return 'UTC';
-  const sign = minutes > 0 ? '+' : '−';
-  const abs = Math.abs(minutes);
-  const hh = Math.floor(abs / 60);
-  const mm = abs % 60;
-  return `UTC${sign}${hh}${mm ? `:${String(mm).padStart(2, '0')}` : ''}`;
-}
-
-const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
-  ['year', 365 * 24 * 3600],
-  ['month', 30 * 24 * 3600],
-  ['day', 24 * 3600],
-  ['hour', 3600],
-  ['minute', 60],
-  ['second', 1],
-];
-
-export function relative(seconds: number, nowSeconds: number): string {
-  const diff = seconds - nowSeconds;
-  const [unit, size] = UNITS.find(([, s]) => Math.abs(diff) >= s) ?? ['second', 1];
-  return new Intl.RelativeTimeFormat('ru', { numeric: 'always' }).format(
-    Math.trunc(diff / size),
-    unit,
-  );
-}
+export { formatInstant, relative } from '../timestamp/logic.ts';
 
 /** Метка claim: «Истёк · 1 января 2026, 03:00 UTC · 4 часа назад». */
 export function claimLabel(claim: Claim, nowSeconds: number): string {

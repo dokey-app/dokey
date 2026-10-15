@@ -1,0 +1,9 @@
+---
+import ToolPage from '../layouts/ToolPage.astro';
+import { getTool } from '../registry/tools.ts';
+import TimestampTool from '../tools/timestamp/TimestampTool.astro';
+---
+
+<ToolPage tool={getTool('unix-timestamp')}>
+  <TimestampTool />
+</ToolPage>

@@ -27,7 +27,8 @@ flowchart LR
 | `egress/`         | Счётчик внешних запросов (`PerformanceObserver` по ресурсам)                |
 | `worker/`         | Не используется: см. решение 18 в decisions.md                              |
 
-Правила зависимостей: `registry` не импортирует `tools` и `ui`; `logic.ts` не трогает DOM;
+Правила зависимостей: `registry` не импортирует `tools` и `ui`; `logic.ts` не трогает DOM и
+может брать чужой `logic.ts` (JWT — парсер JSON и вывод времени из timestamp);
 новый инструмент — это каталог в `tools/`, страница `pages/<id>.astro` и запись в
 `registry/tools.ts`; sitemap и ссылки на главной выводятся из реестра. Страница без записи в
 реестре (или наоборот) валит `build.spec.ts`. Служебные индексируемые страницы — `staticPaths`
