@@ -1,0 +1,174 @@
+---
+// Разметка UUID/ULID Generator. Значения генерирует только браузер (ui.ts) —
+// значение со сборки было бы одним и тем же у всех посетителей.
+import { MAX_BATCH } from './logic.ts';
+---
+
+<div class="workbench" data-uuid-tool>
+  <section class="pane" aria-labelledby="uuid-gen-title">
+    <h2 id="uuid-gen-title" class="field-label">Сгенерировать</h2>
+    <fieldset class="chips" data-kind>
+      <legend class="visually-hidden">Тип идентификатора</legend>
+      <label><input type="radio" name="uuid-kind" value="v4" checked />v4</label>
+      <label><input type="radio" name="uuid-kind" value="v7" />v7</label>
+      <label><input type="radio" name="uuid-kind" value="ulid" />ULID</label>
+    </fieldset>
+    <div class="gen-row">
+      <label class="count-label" for="uuid-count">Количество</label>
+      <input
+        id="uuid-count"
+        class="count"
+        type="text"
+        inputmode="numeric"
+        value="1"
+        data-count
+        autocomplete="off"
+        aria-describedby="uuid-count-hint"
+      />
+      <button type="button" class="btn btn-primary" data-generate autofocus>Сгенерировать</button>
+    </div>
+    <p id="uuid-count-hint" class="hint">От 1 до {MAX_BATCH}</p>
+    <div class="notice notice-error" role="alert" data-count-error hidden></div>
+    <div class="notice notice-error" data-unavailable hidden>
+      Браузер не даёт криптографический генератор случайных чисел — значения не выдаются
+    </div>
+    <noscript><p class="hint">Значения генерирует браузер — для этого нужен JavaScript</p></noscript
+    >
+    <div class="result-head">
+      <span class="field-label" data-values-label>Значения</span>
+      <button type="button" class="btn" data-copy-all disabled>Скопировать все</button>
+    </div>
+    <ol class="values" data-values aria-labelledby="uuid-gen-title"></ol>
+  </section>
+
+  <section class="pane">
+    <h2 class="field-label"><label for="uuid-inspect">Проверить UUID или ULID</label></h2>
+    <input
+      id="uuid-inspect"
+      class="line"
+      type="text"
+      data-inspect
+      spellcheck="false"
+      autocomplete="off"
+      autocapitalize="off"
+      placeholder="f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    />
+    <div class="notice notice-error" role="alert" data-inspect-error hidden></div>
+    <dl class="fields" data-fields></dl>
+  </section>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .workbench {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-8);
+    margin-top: var(--space-6);
+  }
+
+  @media (max-width: 900px) {
+    .workbench {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .pane h2 {
+    margin: 0 0 var(--space-3);
+  }
+
+  .gen-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+  }
+
+  .count-label {
+    font: var(--type-ui);
+  }
+
+  .count,
+  .line {
+    min-height: var(--control-height-md);
+    padding: 0 var(--space-3);
+    font: var(--type-code);
+    color: var(--text-strong);
+    background: var(--surface-card);
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-md);
+  }
+
+  .count {
+    width: 6em;
+  }
+
+  .line {
+    display: block;
+    width: 100%;
+  }
+
+  .hint {
+    margin: var(--space-2) 0 0;
+    font: var(--type-ui);
+    color: var(--text-muted);
+  }
+
+  .result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: var(--space-6) 0 var(--space-2);
+  }
+
+  /* Строки значений и полей разбора строит ui.ts — стили через :global. */
+  .values {
+    max-height: 560px;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    list-style: none;
+  }
+
+  .values :global(li) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .values :global(code),
+  .fields :global(code) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--text-strong);
+  }
+
+  .fields {
+    margin: var(--space-4) 0 0;
+  }
+
+  .fields :global(.row) {
+    display: grid;
+    grid-template-columns: 7em minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .fields :global(dt) {
+    font: var(--type-ui);
+    color: var(--text-muted);
+  }
+
+  .fields :global(dd) {
+    margin: 0;
+    min-width: 0;
+  }
+</style>

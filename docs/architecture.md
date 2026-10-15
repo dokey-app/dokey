@@ -65,9 +65,9 @@ interface Tool {
 
 ## Зависимости продукта
 
-Своего кода хватает почти везде: `JSON.parse`, WebCrypto (HMAC-SHA256), `TextEncoder`,
-`URL`/`URLSearchParams`, `Intl`. Для UUID v7/ULID допустимы `uuid` и `ulid` в чанке страницы
-`/uuid`. Любая новая зависимость — запись в [decisions.md](decisions.md).
+Прикладных зависимостей нет: свой разборщик JSON, WebCrypto (HMAC), `TextEncoder`/`TextDecoder`,
+`URL`, `Intl`, `crypto.getRandomValues` (UUID v4/v7 и ULID — своя реализация по RFC 9562 и
+спецификации ULID). Любая новая зависимость — запись в [decisions.md](decisions.md).
 
 ## Инварианты и их проверки
 
