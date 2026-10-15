@@ -1,0 +1,150 @@
+---
+// «Как это проверить» — процедура опровержения, а не документ о приватности.
+// Политика CSP читается из public/_headers на сборке: страница не может разойтись с тем,
+// что отдаёт сервер.
+import { readFileSync } from 'node:fs';
+import Base from '../layouts/Base.astro';
+
+const headers = readFileSync('public/_headers', 'utf8');
+const csp = headers.match(/Content-Security-Policy:\s*(.+)/)?.[1];
+if (!csp) throw new Error('В public/_headers нет Content-Security-Policy');
+const directives = csp.split(';').map((d) => d.trim());
+---
+
+<Base
+  title="Как это проверить — DoKey"
+  description="Как самому убедиться, что ввод не покидает вкладку: вкладка Network, заголовок Content-Security-Policy, хранилища браузера. Что не отправляется никогда и какой риск остаётся."
+>
+  <article class="prose">
+    <h1>Как это проверить</h1>
+    <p class="lead">
+      Здесь процедура, а не обещание: всё, что ниже, проверяется за пару минут в инструментах
+      разработчика вашего браузера.
+    </p>
+
+    <h2>Что не отправляется никогда</h2>
+    <p>
+      То, что вы вводите или выбираете, и всё, что из этого получено: JSON, токены, ключи подписи,
+      файлы, их фрагменты и длины. Ни на dokey.ru, ни куда-либо ещё.
+    </p>
+    <p>
+      Ввод и результат не записываются в localStorage, sessionStorage, cookie, IndexedDB, адрес
+      страницы и историю браузера. Уход со страницы JWT Inspector стирает токен и ключ.
+    </p>
+
+    <h2>Какие запросы есть</h2>
+    <p>
+      Только загрузка файлов самого сайта с dokey.ru: HTML, CSS, JavaScript и значок. Аналитики,
+      счётчиков посещений, шрифтов и скриптов с других адресов нет. Сайт раздаёт Cloudflare: как
+      любой сервер, он видит адрес страницы, IP-адрес и браузер посетителя. Ввод в адрес страницы не
+      попадает, поэтому и в эти журналы — тоже.
+    </p>
+
+    <h2>Как проверить самому</h2>
+    <ol>
+      <li>
+        Откройте инструменты разработчика (<kbd>F12</kbd> или <kbd>Ctrl</kbd> + <kbd>Shift</kbd> +
+        <kbd>I</kbd>), вкладку <strong>Network</strong>, и перезагрузите страницу.
+      </li>
+      <li>Все запросы в списке — к dokey.ru.</li>
+      <li>
+        Вставьте что-нибудь в любой инструмент и поработайте с ним: новых запросов в списке не
+        появляется.
+      </li>
+      <li>
+        Откройте первый запрос — сам документ — и найдите в <strong>Response Headers</strong>
+        заголовок <code>content-security-policy</code>. Директивы <code>script-src 'self'</code>
+        и <code>connect-src 'self'</code> запрещают браузеру выполнять чужие скрипты и отправлять запросы
+        на любой адрес, кроме dokey.ru, — даже если такой код кто-то добавит.
+      </li>
+      <li>
+        Вкладка <strong>Application</strong> → <strong>Storage</strong>: хранилища сайта пусты.
+      </li>
+    </ol>
+    <p>Тот же заголовок без браузера:</p>
+    <pre
+      class="code"
+      tabindex="0"><code>curl -sI https://dokey.ru | grep -i content-security-policy</code></pre>
+
+    <h3>Политика, которую отдаёт сервер</h3>
+    <pre class="code" tabindex="0" data-csp><code>{directives.join(';\n')}</code></pre>
+
+    <h2>Счётчик в шапке</h2>
+    <p>
+      «Внешних запросов» считает файлы, загруженные с других адресов, и попытки, которые
+      заблокировала политика выше. На каждой странице он должен показывать 0. Если видите другое
+      число — напишите на <a href="mailto:security@dokey.ru">security@dokey.ru</a>.
+    </p>
+
+    <h2>Что остаётся за пределами сайта</h2>
+    <ul>
+      <li>
+        Расширения браузера читают страницу целиком и могут отправить её содержимое куда угодно. Для
+        боевых секретов используйте окно без расширений — например, гостевой профиль.
+      </li>
+      <li>Демонстрация экрана и запись экрана показывают ввод тем, кто смотрит.</li>
+      <li>
+        Корпоративный прокси с подменой TLS-сертификата видит и может изменить всё, что получает
+        браузер, в том числе код сайта.
+      </li>
+    </ul>
+    <p>От этого статический сайт защитить не может — и не заявляет, что может.</p>
+
+    <h2>Об обязательствах</h2>
+    <p>
+      Обязательств у проекта нет: ни SLA, ни срока ответа, ни срока выпуска исправлений
+      безопасности, ни обещания, что проект будет жив через год.
+    </p>
+    <p>
+      Есть проверяемое: открытый код под Apache-2.0 и заголовки ответа, которые можно прочитать
+      самому.
+    </p>
+    <p>Если для вашего периметра этого мало — это верный вывод, а не недоразумение.</p>
+
+    <h2>Контакты</h2>
+    <ul>
+      <li>
+        Уязвимость — <a href="mailto:security@dokey.ru">security@dokey.ru</a> или приватный advisory на
+        GitHub, порядок — в
+        <a href="https://github.com/dokey-app/dokey/blob/main/SECURITY.md">SECURITY.md</a>.
+      </li>
+      <li>Вопрос о данных — <a href="mailto:privacy@dokey.ru">privacy@dokey.ru</a>.</li>
+      <li>
+        Исходный код — <a href="https://github.com/dokey-app/dokey">github.com/dokey-app/dokey</a>.
+      </li>
+    </ul>
+  </article>
+</Base>
+
+<style>
+  .prose {
+    max-width: 68ch;
+  }
+
+  .lead {
+    color: var(--text-muted);
+  }
+
+  h3 {
+    margin: var(--space-6) 0 var(--space-2);
+  }
+
+  ol,
+  ul {
+    padding-left: var(--space-6);
+  }
+
+  li {
+    margin-bottom: var(--space-2);
+  }
+
+  .prose pre {
+    margin: 0 0 var(--space-4);
+  }
+
+  kbd {
+    padding: 0 var(--space-1);
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-sm);
+  }
+</style>

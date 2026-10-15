@@ -26,7 +26,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   <body>
     <header class="topbar">
       <a class="brand" href="/">DoKey</a>
-      <p class="egress">Внешних запросов: <span data-egress-count>0</span></p>
+      <p class="egress">
+        Внешних запросов: <span data-egress-count>0</span> ·
+        <a href="/how-to-verify">Как это проверить</a>
+      </p>
     </header>
     <main id="main" class="page">
       <slot />
@@ -49,8 +52,9 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     z-index: 1;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     justify-content: space-between;
-    gap: var(--space-4);
+    gap: var(--space-1) var(--space-4);
     min-height: var(--topbar-height);
     padding: 0 var(--page-gutter);
     background: var(--surface-card);

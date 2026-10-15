@@ -29,7 +29,7 @@ describe('реестр', () => {
 
 describe('sitemap', () => {
   it('содержит главную и маршрут каждого инструмента', () => {
-    expect(sitemapPaths([fake])).toEqual(['/', '/jwt']);
+    expect(sitemapPaths([fake])).toEqual(['/', '/how-to-verify', '/jwt']);
   });
 
   it('собирает абсолютные адреса без двойного слеша', () => {

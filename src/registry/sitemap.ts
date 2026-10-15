@@ -1,7 +1,7 @@
 import type { Tool } from './tools.ts';
 
 // Страницы вне реестра, которые индексируются. Служебные (/health, 404) сюда не входят.
-export const staticPaths: readonly string[] = ['/'];
+export const staticPaths: readonly string[] = ['/', '/how-to-verify'];
 
 export function sitemapPaths(tools: readonly Tool[]): string[] {
   return [...staticPaths, ...tools.map((tool) => `/${tool.id}`)];

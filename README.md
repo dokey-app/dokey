@@ -27,7 +27,8 @@ curl -sI https://dokey.ru | grep -i content-security-policy
 
 `script-src 'self'` и `connect-src 'self'` — место, где обещание либо держится, либо нет.
 Откройте DevTools → Network и поработайте с инструментом: запросов на чужие origin быть не
-должно ни одного.
+должно ни одного. Полная процедура — на странице
+[Как это проверить](https://dokey.ru/how-to-verify).
 
 ## Документы
 
