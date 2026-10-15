@@ -1,0 +1,231 @@
+---
+// Разметка URL Encoder/Decoder. Пример разбирается на сборке — виден без JS;
+// при вводе ui.ts строит те же строки с теми же классами.
+import { EXAMPLE, parseUrl } from './logic.ts';
+
+const example = parseUrl(EXAMPLE);
+if (!example.ok) throw new Error('EXAMPLE в src/tools/url/logic.ts не разбирается');
+---
+
+<div class="workbench" data-url-tool>
+  <div class="pane">
+    <label class="field-label" for="url-input">URL или текст</label>
+    <textarea
+      id="url-input"
+      class="input"
+      data-input
+      spellcheck="false"
+      autocomplete="off"
+      autocapitalize="off"
+      placeholder="Вставьте URL, percent-строку или текст"
+      autofocus></textarea>
+    <div class="notice notice-error" role="alert" data-error hidden></div>
+  </div>
+
+  <div class="pane">
+    <div class="toolbar">
+      <fieldset class="chips">
+        <legend class="visually-hidden">Что сделать</legend>
+        <label><input type="radio" name="url-mode" value="parse" checked />Разобрать URL</label>
+        <label><input type="radio" name="url-mode" value="decode" />Декодировать</label>
+        <label><input type="radio" name="url-mode" value="encode" />URL-кодировать</label>
+      </fieldset>
+    </div>
+    <div class="result-head">
+      <h2 class="field-label" data-result-label>Пример</h2>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" data-copy>Скопировать</button>
+        <button type="button" class="btn" data-clear>Очистить</button>
+      </div>
+    </div>
+
+    <pre class="code wrap" data-output tabindex="0" aria-label="Результат" hidden></pre>
+
+    <div data-parsed>
+      <dl class="components" data-components>
+        {
+          example.components.map((c) => (
+            <div class="row">
+              <dt>{c.name}</dt>
+              <dd>
+                <code>{c.value}</code>
+                <button
+                  type="button"
+                  class="btn btn-small"
+                  data-copy-text={c.value}
+                  aria-label={`Скопировать: ${c.name}`}
+                >
+                  Скопировать
+                </button>
+              </dd>
+            </div>
+          ))
+        }
+      </dl>
+      <div data-query-section hidden={example.query.length === 0}>
+        <h3 class="field-label">Параметры query</h3>
+        <div class="table-wrap">
+          <table class="query">
+            <thead>
+              <tr>
+                <th scope="col">Ключ</th>
+                <th scope="col">Значение</th>
+                <th scope="col"><span class="visually-hidden">Действия</span></th>
+              </tr>
+            </thead>
+            <tbody data-query>
+              {
+                example.query.map((row) => (
+                  <tr>
+                    <td>
+                      <code>{row.key}</code>
+                    </td>
+                    <td>
+                      <code>{row.value}</code>
+                    </td>
+                    <td class="cell-actions">
+                      <button
+                        type="button"
+                        class="btn btn-small"
+                        data-copy-text={row.value}
+                        aria-label={`Скопировать значение ${row.key}`}
+                      >
+                        Значение
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-small"
+                        data-copy-text={row.raw}
+                        aria-label={`Скопировать пару ${row.key}`}
+                      >
+                        Пару
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .workbench {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-6);
+  }
+
+  @media (max-width: 900px) {
+    .workbench {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .toolbar {
+    margin-bottom: var(--space-3);
+  }
+
+  .result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+
+  .result-head h2 {
+    margin: 0;
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .wrap {
+    max-height: 640px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /* Строки компонентов и query строит и ui.ts — стили через :global. */
+  .components {
+    margin: 0;
+  }
+
+  .components :global(.row) {
+    display: grid;
+    grid-template-columns: 7.5em minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: center;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .components :global(dt) {
+    font: var(--type-ui);
+    color: var(--text-muted);
+  }
+
+  .components :global(dd) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin: 0;
+    min-width: 0;
+  }
+
+  .components :global(code),
+  .query :global(code) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--text-strong);
+  }
+
+  h3 {
+    margin: var(--space-6) 0 var(--space-2);
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .query {
+    width: 100%;
+    border-collapse: collapse;
+    font: var(--type-ui);
+  }
+
+  .query th {
+    text-align: left;
+    font: var(--type-label);
+    color: var(--text-muted);
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--border-default);
+  }
+
+  .query :global(td) {
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--border-subtle);
+    vertical-align: top;
+  }
+
+  .query :global(.cell-actions) {
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  .query :global(.cell-actions .btn + .btn) {
+    margin-left: var(--space-1);
+  }
+</style>
