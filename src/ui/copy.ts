@@ -14,11 +14,13 @@ export async function copyText(button: HTMLButtonElement, text: string): Promise
     alertNow(DENIED);
     return;
   }
-  const label = button.dataset['label'] ?? button.textContent ?? '';
+  // У кнопки с иконкой меняется только текст: иконка остаётся на месте.
+  const target = button.querySelector<HTMLElement>('.btn-text') ?? button;
+  const label = button.dataset['label'] ?? target.textContent ?? '';
   button.dataset['label'] = label;
-  button.textContent = 'Скопировано';
+  target.textContent = 'Скопировано';
   announce('Скопировано');
   window.setTimeout(() => {
-    button.textContent = label;
+    target.textContent = label;
   }, COPIED_MS);
 }

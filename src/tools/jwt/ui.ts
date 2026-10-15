@@ -1,3 +1,4 @@
+import { showCharCount } from '../../ui/char-count.ts';
 import { copyText } from '../../ui/copy.ts';
 import { announce } from '../../ui/status.ts';
 import {
@@ -33,6 +34,7 @@ function mount(): void {
   const claims = $<HTMLElement>('[data-claims]');
   const verdict = $<HTMLElement>('[data-verdict]');
   const verify = $<HTMLDetailsElement>('[data-verify]');
+  const alg = $<HTMLElement>('[data-alg]');
   const hint = $<HTMLElement>('[data-verify-hint]');
   const key = $<HTMLInputElement>('[data-key]');
   const toggleKey = $<HTMLButtonElement>('[data-toggle-key]');
@@ -45,8 +47,8 @@ function mount(): void {
 
   function setVerdict(text: string, tone: 'ok' | 'bad' | null): void {
     verdict.textContent = text;
-    verdict.classList.toggle('ok', tone === 'ok');
-    verdict.classList.toggle('bad', tone === 'bad');
+    verdict.classList.toggle('badge-success', tone === 'ok');
+    verdict.classList.toggle('badge-danger', tone === 'bad');
   }
 
   function renderClaims(jwt: DecodedJwt): void {
@@ -104,11 +106,14 @@ function mount(): void {
       claims.replaceChildren();
       claimsSection.hidden = true;
       label.textContent = 'Результат';
+      alg.hidden = true;
       setVerdict('', null);
       updateVerifyState();
       return;
     }
     label.textContent = isExample ? 'Пример' : 'Результат';
+    alg.hidden = false;
+    alg.textContent = jwt.alg;
     header.textContent = jwt.header;
     payload.textContent = jwt.payload;
     signature.textContent = jwt.signature;
@@ -120,6 +125,7 @@ function mount(): void {
 
   function run(): void {
     const source = input.value;
+    showCharCount(document.querySelector('[data-char-count]'), source);
     if (source.trim() === '') {
       errorBox.hidden = true;
       const example = decodeJwt(EXAMPLE);
@@ -152,7 +158,8 @@ function mount(): void {
   key.addEventListener('input', () => {
     updateVerifyState();
     // Вердикт относится к прежнему ключу — после правки ключа он больше не верен.
-    const checked = verdict.classList.contains('ok') || verdict.classList.contains('bad');
+    const checked =
+      verdict.classList.contains('badge-success') || verdict.classList.contains('badge-danger');
     if (current && checked) setVerdict('Подпись не проверялась', null);
   });
 

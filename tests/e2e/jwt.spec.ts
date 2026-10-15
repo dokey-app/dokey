@@ -19,13 +19,13 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('до ввода — разобранный пример, поле в фокусе', async ({ page }) => {
-  await expect(page.getByLabel('JWT', { exact: true })).toBeFocused();
+  await expect(page.getByLabel('Токен', { exact: true })).toBeFocused();
   await expect(page.locator('[data-result-label]')).toHaveText('Пример');
   await expect(page.locator('[data-payload]')).toContainText('Ann Example');
 });
 
 test('вставил → header, payload, время → скопировал payload', async ({ page }) => {
-  await page.getByLabel('JWT', { exact: true }).fill(`Bearer ${HS256}`);
+  await page.getByLabel('Токен', { exact: true }).fill(`Bearer ${HS256}`);
   await expect(page.locator('[data-result-label]')).toHaveText('Результат');
   await expect(page.locator('[data-header]')).toContainText('"alg": "HS256"');
   await expect(page.locator('[data-payload]')).toContainText(MARKER);
@@ -37,7 +37,7 @@ test('вставил → header, payload, время → скопировал pa
 });
 
 test('проверка подписи: верна, не совпала, сброс при смене ключа', async ({ page }) => {
-  await page.getByLabel('JWT', { exact: true }).fill(HS256);
+  await page.getByLabel('Токен', { exact: true }).fill(HS256);
   const verdict = page.locator('[data-verdict]');
   await expect(verdict).toHaveText('Подпись не проверялась');
 
@@ -70,7 +70,7 @@ test('ключ замаскирован и показывается по кно�
 });
 
 test('alg none и RS256 не проверяются, но разбираются', async ({ page }) => {
-  const input = page.getByLabel('JWT', { exact: true });
+  const input = page.getByLabel('Токен', { exact: true });
   await input.fill(`${b64url('{"alg":"none"}')}.${b64url('{"sub":"x"}')}.`);
   await expect(page.locator('[data-verdict]')).toHaveText(
     'Токен не подписан (alg: none). Подтвердить его подлинность нечем.',
@@ -84,7 +84,7 @@ test('alg none и RS256 не проверяются, но разбираются
 });
 
 test('не три сегмента — понятная ошибка, ввод сохраняется', async ({ page }) => {
-  const input = page.getByLabel('JWT', { exact: true });
+  const input = page.getByLabel('Токен', { exact: true });
   await input.fill('abc.def');
   await expect(page.getByRole('alert').filter({ hasText: 'сегмент' })).toHaveText(
     'Ожидались три сегмента, разделённые точкой. Найдено сегментов: 2',
@@ -93,15 +93,15 @@ test('не три сегмента — понятная ошибка, ввод �
 });
 
 test('уход со страницы стирает токен и ключ', async ({ page }) => {
-  await page.getByLabel('JWT', { exact: true }).fill(HS256);
+  await page.getByLabel('Токен', { exact: true }).fill(HS256);
   await page.getByText('Проверить подпись', { exact: true }).first().click();
   await page.getByLabel('Ключ подписи').fill('secret-key');
   await expect(page.locator('[data-payload]')).toContainText(MARKER);
 
   await page.goto('/');
   await page.goBack();
-  await expect(page.locator('h1')).toHaveText('Декодировать JWT и проверить подпись');
-  await expect(page.getByLabel('JWT', { exact: true })).toHaveValue('');
+  await expect(page.locator('h1')).toHaveText('JWT Inspector');
+  await expect(page.getByLabel('Токен', { exact: true })).toHaveValue('');
   await expect(page.getByLabel('Ключ подписи')).toHaveValue('');
   expect(await page.content()).not.toContain(MARKER);
 });

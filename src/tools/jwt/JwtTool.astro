@@ -1,6 +1,7 @@
 ---
 // Разметка JWT Inspector. Пример разбирается на сборке — виден без JS;
 // относительное время («4 часа назад») и местное время досчитывает ui.ts.
+import Icon from '../../ui/Icon.astro';
 import { EXAMPLE, claimLabel, decodeJwt, formatInstant } from './logic.ts';
 
 const example = decodeJwt(EXAMPLE);
@@ -10,86 +11,112 @@ const now = Math.floor(Date.now() / 1000);
 ---
 
 <div class="workbench" data-jwt-tool>
-  <div class="pane">
-    <label class="field-label" for="jwt-input">JWT</label>
-    <textarea
-      id="jwt-input"
-      class="input"
-      data-input
-      spellcheck="false"
-      autocomplete="off"
-      autocapitalize="off"
-      placeholder="Вставьте токен"
-      autofocus></textarea>
-    <div class="notice notice-error" role="alert" data-error hidden></div>
-    <div class="clear-row">
-      <button type="button" class="btn" data-clear>Очистить</button>
+  <section class="card">
+    <div class="card-head">
+      <label class="card-title" for="jwt-input">Токен</label>
+      <span class="count-badge" data-char-count>0&nbsp;симв.</span>
     </div>
-  </div>
-
-  <div class="pane">
-    <p class="field-label result-label" data-result-label>Пример</p>
-
-    <div class="result-head">
-      <h2 class="field-label">header</h2>
-      <button type="button" class="btn btn-small" data-copy="header" aria-label="Скопировать header"
-        >Скопировать</button
-      >
+    <div class="card-body">
+      <textarea
+        id="jwt-input"
+        class="input"
+        data-input
+        spellcheck="false"
+        autocomplete="off"
+        autocapitalize="off"
+        placeholder="Вставьте токен"
+        autofocus></textarea>
+      <div class="notice notice-error" role="alert" data-error hidden></div>
+      <div class="clear-row">
+        <button type="button" class="btn btn-small btn-ghost" data-clear>
+          <Icon name="eraser" /><span class="btn-text">Очистить</span>
+        </button>
+      </div>
     </div>
-    <pre class="code" data-header tabindex="0">{jwt.header}</pre>
+  </section>
 
-    <div class="result-head">
-      <h2 class="field-label">payload</h2>
-      <button
-        type="button"
-        class="btn btn-small"
-        data-copy="payload"
-        aria-label="Скопировать payload">Скопировать</button
-      >
-    </div>
-    <pre class="code" data-payload tabindex="0">{jwt.payload}</pre>
+  <div>
+    <section class="card">
+      <div class="card-head">
+        <h2 class="card-title" data-result-label>Пример</h2>
+        <p class="badge verdict" data-verdict>Подпись не проверялась</p>
+      </div>
+      <div class="card-body">
+        <div class="part-head">
+          <h3 class="part-title">header</h3>
+          <button
+            type="button"
+            class="btn btn-small"
+            data-copy="header"
+            aria-label="Скопировать header"
+          >
+            <Icon name="copy" /><span class="btn-text">Скопировать</span>
+          </button>
+        </div>
+        <pre class="code" data-header tabindex="0">{jwt.header}</pre>
 
-    <section data-claims-section hidden={jwt.claims.length === 0}>
-      <h2 class="field-label">Время</h2>
-      <dl class="claims" data-claims>
-        {
-          jwt.claims.map((claim) => (
-            <div>
-              <dt>{claim.name}</dt>
-              <dd>
-                <span class="claim-label">{claimLabel(claim, now)}</span>
-                <span class="claim-raw">{`${claim.seconds} · ${formatInstant(claim.seconds, 'UTC')}`}</span>
-              </dd>
-            </div>
-          ))
-        }
-      </dl>
+        <div class="part-head">
+          <h3 class="part-title">payload</h3>
+          <button
+            type="button"
+            class="btn btn-small"
+            data-copy="payload"
+            aria-label="Скопировать payload"
+          >
+            <Icon name="copy" /><span class="btn-text">Скопировать</span>
+          </button>
+        </div>
+        <pre class="code" data-payload tabindex="0">{jwt.payload}</pre>
+
+        <section data-claims-section hidden={jwt.claims.length === 0}>
+          <h3 class="part-title">Время</h3>
+          <dl class="claims" data-claims>
+            {
+              jwt.claims.map((claim) => (
+                <div>
+                  <dt>{claim.name}</dt>
+                  <dd>
+                    <span class="claim-label">{claimLabel(claim, now)}</span>
+                    <span class="claim-raw">{`${claim.seconds} · ${formatInstant(claim.seconds, 'UTC')}`}</span>
+                  </dd>
+                </div>
+              ))
+            }
+          </dl>
+        </section>
+
+        <h3 class="part-title">signature</h3>
+        <pre class="code signature" data-signature tabindex="0">{jwt.signature}</pre>
+      </div>
     </section>
 
-    <h2 class="field-label">signature</h2>
-    <pre class="code signature" data-signature tabindex="0">{jwt.signature}</pre>
-    <p class="verdict" data-verdict>Подпись не проверялась</p>
-
-    <details class="verify" data-verify>
-      <summary>Проверить подпись</summary>
-      <p class="hint" data-verify-hint>Ключ нужен только для проверки подписи</p>
-      <label class="field-label" for="jwt-key">Ключ подписи</label>
-      <div class="key-row">
-        <input
-          id="jwt-key"
-          class="key masked"
-          type="text"
-          data-key
-          autocomplete="off"
-          spellcheck="false"
-          autocapitalize="off"
-        />
-        <button type="button" class="btn" data-toggle-key aria-pressed="false">Показать</button>
-      </div>
-      <button type="button" class="btn btn-primary" data-verify-button disabled
-        >Проверить подпись</button
-      >
-    </details>
+    <section class="card">
+      <details class="verify" data-verify>
+        <summary class="card-head">
+          <span class="card-title">Проверить подпись</span>
+          <span class="count-badge" data-alg>{jwt.alg}</span>
+        </summary>
+        <div class="card-body">
+          <p class="hint" data-verify-hint>Ключ нужен только для проверки подписи</p>
+          <label class="field-label" for="jwt-key">Ключ подписи</label>
+          <div class="key-row">
+            <input
+              id="jwt-key"
+              class="key masked"
+              type="text"
+              data-key
+              autocomplete="off"
+              spellcheck="false"
+              autocapitalize="off"
+            />
+            <button type="button" class="btn" data-toggle-key aria-pressed="false">Показать</button>
+          </div>
+          <button type="button" class="btn btn-primary" data-verify-button disabled>
+            <Icon name="shield-check" /><span class="btn-text">Проверить подпись</span>
+          </button>
+        </div>
+      </details>
+    </section>
   </div>
 </div>
 
@@ -98,39 +125,29 @@ const now = Math.floor(Date.now() / 1000);
 </script>
 
 <style>
-  .workbench {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-6);
-    margin-top: var(--space-6);
-  }
-
-  @media (max-width: 900px) {
-    .workbench {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
   .clear-row {
     margin-top: var(--space-3);
   }
 
-  .result-label {
-    color: var(--text-strong);
-  }
-
-  .result-head {
+  .part-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin: var(--space-4) 0 var(--space-2);
   }
 
-  .pane h2 {
-    margin: var(--space-4) 0 var(--space-2);
+  .part-head:first-child {
+    margin-top: 0;
   }
 
-  .result-head h2 {
+  .part-title {
+    margin: var(--space-4) 0 var(--space-2);
+    font: var(--type-ui);
+    font-weight: 600;
+    color: var(--text-strong);
+  }
+
+  .part-head .part-title {
     margin: 0;
   }
 
@@ -139,11 +156,16 @@ const now = Math.floor(Date.now() / 1000);
     overflow-wrap: anywhere;
   }
 
+  .verdict {
+    margin: 0;
+    white-space: normal;
+  }
+
+  /* Строки claims пересоздаёт ui.ts — scoped-стили до них не дотягиваются. */
   .claims {
     margin: 0;
   }
 
-  /* Строки claims пересоздаёт ui.ts — scoped-стили до них не дотягиваются. */
   .claims :global(div) {
     display: grid;
     grid-template-columns: 3em minmax(0, 1fr);
@@ -171,33 +193,31 @@ const now = Math.floor(Date.now() / 1000);
     color: var(--text-muted);
   }
 
-  .verdict {
-    margin: var(--space-3) 0;
-    font-weight: 600;
-    color: var(--text-strong);
-  }
-
-  .verdict.ok {
-    color: var(--text-success);
-  }
-
-  .verdict.bad {
-    color: var(--text-danger);
-  }
-
-  .verify {
-    padding: var(--space-3) var(--space-4);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-lg);
-  }
-
   .verify summary {
-    font: var(--type-ui);
     cursor: pointer;
+    list-style: none;
+  }
+
+  .verify:not([open]) summary {
+    border-bottom: 0;
+  }
+
+  .verify summary::before {
+    content: '▸';
+    margin-right: var(--space-2);
+    color: var(--text-muted);
+  }
+
+  .verify[open] summary::before {
+    content: '▾';
+  }
+
+  .verify summary .card-title {
+    flex: 1;
   }
 
   .hint {
-    margin: var(--space-3) 0;
+    margin: 0 0 var(--space-3);
     font: var(--type-ui);
     color: var(--text-muted);
   }

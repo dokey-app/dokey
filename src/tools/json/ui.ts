@@ -1,3 +1,4 @@
+import { showCharCount } from '../../ui/char-count.ts';
 import { copyText } from '../../ui/copy.ts';
 import {
   EXAMPLE,
@@ -89,6 +90,7 @@ function mount(tool: HTMLElement): void {
 
   function run(force = false): void {
     const source = input.value;
+    showCharCount(tool.querySelector('[data-char-count]'), source);
     if (source.trim() === '') {
       showThreshold(null, false);
       render(EXAMPLE, true);
