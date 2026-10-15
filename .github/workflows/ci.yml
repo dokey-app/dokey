@@ -89,7 +89,13 @@ jobs:
         with:
           name: dist
           path: dist
-      - run: pnpm exec wrangler deploy
+      # Не `wrangler deploy`: он синхронизирует маршруты, а у токена нет на них права —
+      # Custom Domain привязан в панели (decisions.md № 6). Версия загружается и
+      # выкатывается на 100 % без касания маршрутов.
+      - name: Upload and deploy Worker version
+        run: |
+          pnpm exec wrangler versions upload --tag "$GITHUB_SHA" --message "main $GITHUB_SHA"
+          pnpm exec wrangler versions deploy --version-tag "$GITHUB_SHA@100%" --yes
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
