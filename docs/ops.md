@@ -41,7 +41,7 @@
 ```bash
 dig NS dokey.ru +short
 curl -sI https://dokey.ru | grep -ciE '^(nel|report-to|reporting-endpoints):'   # 0
-curl -s https://dokey.ru/ | grep -c cloudflareinsights                            # 0
+curl -s -H 'Accept: text/html' https://dokey.ru/ | grep -c cloudflareinsights       # 0
 ```
 
 ## Деплой

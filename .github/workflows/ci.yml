@@ -112,7 +112,8 @@ jobs:
       # Настройки зоны, которые вставляют в ответ сторонний origin (docs/ops.md, «Домен и зона»).
       - name: Prod injects no third-party scripts or reporting
         run: |
-          if curl -sf https://dokey.ru/ | grep -q cloudflareinsights; then
+          # Cloudflare вставляет beacon только в ответ на браузерный Accept: text/html.
+          if curl -sf -H 'Accept: text/html' https://dokey.ru/ | grep -q cloudflareinsights; then
             echo "Cloudflare Web Analytics вставляет beacon — выключить в панели (docs/ops.md)" >&2
             exit 1
           fi
