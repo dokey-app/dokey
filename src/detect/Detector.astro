@@ -1,0 +1,64 @@
+---
+// Поле автоопределения на главной. Чипсы кандидатов и результат строит ui.ts.
+---
+
+<section class="detector" data-detector>
+  <label class="field-label" for="detect-input">Вставьте что угодно</label>
+  <textarea
+    id="detect-input"
+    class="input"
+    data-input
+    spellcheck="false"
+    autocomplete="off"
+    autocapitalize="off"
+    placeholder="JWT, JSON, UUID, URL, percent-строка, timestamp или base64"
+    autofocus></textarea>
+  <p class="notice notice-warning" data-too-big hidden></p>
+
+  <div class="result" data-result hidden>
+    <fieldset class="chips" data-chips>
+      <legend class="visually-hidden">Что сделать с вводом</legend>
+    </fieldset>
+    <div class="result-head" data-result-head hidden>
+      <a class="tool-link" data-tool-link href="/"></a>
+      <button type="button" class="btn btn-primary" data-copy>Скопировать</button>
+    </div>
+    <pre class="code wrap" data-output tabindex="0" aria-label="Результат" hidden></pre>
+  </div>
+</section>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .detector {
+    max-width: 960px;
+  }
+
+  .detector textarea {
+    min-height: 160px;
+  }
+
+  .result {
+    margin-top: var(--space-4);
+  }
+
+  .result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin: var(--space-4) 0 var(--space-2);
+  }
+
+  .tool-link {
+    font: var(--type-ui);
+  }
+
+  .wrap {
+    max-height: 480px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+</style>
