@@ -4,6 +4,11 @@
   box-sizing: border-box;
 }
 
+/* Атрибут hidden сильнее любого display из классов (.chips, .progress и т. п.). */
+[hidden] {
+  display: none !important;
+}
+
 html {
   /* Липкая шапка не перекрывает элемент, к которому перешёл фокус. */
   scroll-padding-top: calc(var(--topbar-height) + var(--space-4));

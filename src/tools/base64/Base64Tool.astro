@@ -1,0 +1,168 @@
+---
+// Разметка Base64 Encoder/Decoder. Пример кодируется на сборке — виден без JS.
+import { EXAMPLE, encodeText } from './logic.ts';
+
+const example = encodeText(EXAMPLE, false);
+---
+
+<div class="workbench" data-b64-tool>
+  <div class="pane">
+    <fieldset class="chips source">
+      <legend class="visually-hidden">Что обрабатывать</legend>
+      <label><input type="radio" name="b64-source" value="text" checked />Текст</label>
+      <label><input type="radio" name="b64-source" value="file" />Файл</label>
+    </fieldset>
+
+    <div data-text-pane>
+      <label class="field-label" for="b64-input">Текст или base64</label>
+      <textarea
+        id="b64-input"
+        class="input"
+        data-input
+        spellcheck="false"
+        autocomplete="off"
+        autocapitalize="off"
+        placeholder="Вставьте текст или base64-строку"
+        autofocus></textarea>
+    </div>
+
+    <div class="file-pane" data-file-pane hidden>
+      <input type="file" class="visually-hidden" data-file tabindex="-1" aria-hidden="true" />
+      <button type="button" class="btn btn-primary" data-pick>Выбрать файл</button>
+      <p class="file-info" data-file-info>Файл читается в этой вкладке, внешних запросов — 0</p>
+      <div class="progress" data-progress hidden>
+        <progress max="100" value="0" data-progress-bar aria-label="Чтение файла"></progress>
+        <span data-progress-text></span>
+        <button type="button" class="btn btn-small" data-cancel>Отменить</button>
+      </div>
+    </div>
+
+    <div class="notice notice-error" role="alert" data-error hidden></div>
+    <div class="notice notice-warning" data-threshold hidden>
+      <span data-threshold-text></span>
+      <div>
+        <button type="button" class="btn btn-primary" data-process hidden>Обработать</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pane">
+    <div class="toolbar">
+      <fieldset class="chips" data-direction>
+        <legend class="visually-hidden">Направление</legend>
+        <label><input type="radio" name="b64-direction" value="encode" checked />Кодировать</label>
+        <label><input type="radio" name="b64-direction" value="decode" />Декодировать</label>
+      </fieldset>
+      <label class="check"><input type="checkbox" data-url-safe />URL-safe</label>
+    </div>
+    <div class="result-head">
+      <h2 class="field-label" data-result-label>Пример</h2>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" data-copy>Скопировать</button>
+        <button type="button" class="btn" data-clear>Очистить</button>
+      </div>
+    </div>
+    <pre class="code wrap" data-output tabindex="0" aria-label="Результат">{example}</pre>
+    <div class="binary" data-binary hidden>
+      <p class="binary-info" data-binary-info></p>
+      <pre class="code" data-hex tabindex="0" aria-label="Первые байты в шестнадцатеричном виде">
+      </pre>
+      <button type="button" class="btn btn-primary" data-download>Скачать файл</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .workbench {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-6);
+  }
+
+  @media (max-width: 900px) {
+    .workbench {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .source {
+    margin-bottom: var(--space-4);
+  }
+
+  .file-pane {
+    padding: var(--space-6);
+    border: 1px dashed var(--border-control);
+    border-radius: var(--radius-lg);
+  }
+
+  .file-info {
+    margin: var(--space-3) 0 0;
+    font: var(--type-ui);
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+  }
+
+  .progress {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+    font: var(--type-ui);
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-3);
+  }
+
+  .check {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--target-min);
+    font: var(--type-ui);
+    cursor: pointer;
+  }
+
+  .result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+
+  .result-head h2 {
+    margin: 0;
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .wrap {
+    max-height: 640px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .binary-info {
+    margin: 0 0 var(--space-2);
+    font: var(--type-ui);
+    color: var(--text-strong);
+  }
+
+  .binary .btn {
+    margin-top: var(--space-3);
+  }
+</style>
