@@ -30,14 +30,18 @@
 
 - NS: `kellen.ns.cloudflare.com`, `penny.ns.cloudflare.com`; TLS — Universal SSL.
 - `www` → apex редиректом, «Always Use HTTPS» включён.
-- В зоне **выключены** Managed robots.txt (источник — репозиторий) и Network Error Logging
-  (иначе браузер шлёт отчёты на сторонний origin).
+- В зоне **выключены** Managed robots.txt (источник — репозиторий), Network Error Logging
+  (иначе браузер шлёт отчёты на сторонний origin) и **Web Analytics** (иначе Cloudflare
+  вставляет в HTML скрипт `static.cloudflareinsights.com`: CSP его блокирует, но счётчик
+  внешних запросов показывает не 0). Web Analytics: панель → Analytics & Logs → Web Analytics →
+  `dokey.ru` → выключить автоматическую установку или удалить сайт.
 - Почта (Cloudflare Email Routing): `privacy@`, `security@`, `conduct@dokey.ru`.
 - Registrar lock и автопродление включены у регистратора.
 
 ```bash
 dig NS dokey.ru +short
 curl -sI https://dokey.ru | grep -ciE '^(nel|report-to|reporting-endpoints):'   # 0
+curl -s -H 'Accept: text/html' https://dokey.ru/ | grep -c cloudflareinsights       # 0
 ```
 
 ## Деплой
