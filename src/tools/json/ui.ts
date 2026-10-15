@@ -118,7 +118,19 @@ function mount(tool: HTMLElement): void {
     window.clearTimeout(timer);
     // Большой документ не пересчитывается на каждое нажатие клавиши.
     const delay = input.value.length > 100_000 ? 400 : 150;
-    timer = window.setTimeout(() => run(), delay);
+    timer = window.setTimeout(() => {
+      timer = 0;
+      run();
+    }, delay);
+  }
+
+  // Действие над результатом не должно опередить отложенный пересчёт: иначе скопируется
+  // или подсветится результат предыдущего ввода.
+  function flush(): void {
+    if (timer === 0) return;
+    window.clearTimeout(timer);
+    timer = 0;
+    run();
   }
 
   input.addEventListener('input', schedule);
@@ -128,12 +140,16 @@ function mount(tool: HTMLElement): void {
   processButton.addEventListener('click', () => run(true));
 
   gotoError.addEventListener('click', () => {
+    flush();
     if (!lastError) return;
     input.focus();
     input.setSelectionRange(lastError.offset, Math.min(lastError.offset + 1, input.value.length));
   });
 
-  copy.addEventListener('click', () => void copyText(copy, output.textContent ?? ''));
+  copy.addEventListener('click', () => {
+    flush();
+    void copyText(copy, output.textContent ?? '');
+  });
 
   clear.addEventListener('click', () => {
     input.value = '';

@@ -92,3 +92,9 @@ test('выше мягкого порога — предупреждение и �
   await expect(page.locator('[data-result-label]')).toHaveText('Результат');
   await expect(page.locator('[data-threshold]')).toBeHidden();
 });
+
+test('«Скопировать» сразу после ввода копирует новый результат, а не прежний', async ({ page }) => {
+  await page.getByLabel('JSON', { exact: true }).fill('{"fresh":1}');
+  await page.locator('[data-copy]').click();
+  expect(await clipboard(page)).toBe('{\n  "fresh": 1\n}');
+});

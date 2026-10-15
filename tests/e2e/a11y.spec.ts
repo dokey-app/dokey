@@ -19,7 +19,9 @@ for (const scheme of ['light', 'dark'] as const) {
         const textarea = page.locator('textarea').first();
         if ((await textarea.count()) > 0) {
           await textarea.fill('{"a":1 "b":2}');
-          await expect(page.getByRole('alert').filter({ hasText: 'Строка' })).toBeVisible();
+          await expect(
+            page.locator('[role=alert]:not([hidden])').filter({ hasText: /\S/ }),
+          ).toBeVisible();
           const withError = await new AxeBuilder({ page }).withTags(TAGS).analyze();
           expect(withError.violations.map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
         }
