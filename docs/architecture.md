@@ -88,5 +88,5 @@ interface Tool {
 
 - `pnpm check` — lint, Prettier, `tsc`, Vitest (node), сборка и Playwright.
 - CI (`.github/workflows/ci.yml`) делает то же на каждый PR и push; push в `main` после
-  зелёного прогона деплоит `wrangler deploy` и сверяет CSP прода.
+  зелёного прогона выкатывает версию Worker (`wrangler versions upload/deploy`) и сверяет CSP прода.
 - До релиза сайт закрыт от индексации (`noindex` в макете, `Disallow: /` в `robots.txt`).

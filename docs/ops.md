@@ -43,7 +43,8 @@ curl -sI https://dokey.ru | grep -ciE '^(nel|report-to|reporting-endpoints):'   
 ## Деплой
 
 Push в `main` → CI (`check`, `e2e`) → job `deploy` в environment `production`:
-`wrangler deploy` с `CLOUDFLARE_API_TOKEN` и `CLOUDFLARE_ACCOUNT_ID`, затем сверка CSP прода
+`wrangler versions upload --tag <sha>` и `wrangler versions deploy --version-tag <sha>@100%`
+(маршруты не трогаются — у токена нет на них права), затем сверка CSP прода
 (край Cloudflare переключается ~40 с). Custom Domain привязан в панели один раз; у токена одно
 право — **Account · Workers Scripts · Edit**.
 
