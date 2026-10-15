@@ -1,6 +1,7 @@
 ---
 // Разметка URL Encoder/Decoder. Пример разбирается на сборке — виден без JS;
 // при вводе ui.ts строит те же строки с теми же классами.
+import Icon from '../../ui/Icon.astro';
 import { EXAMPLE, parseUrl } from './logic.ts';
 
 const example = parseUrl(EXAMPLE);
@@ -8,108 +9,120 @@ if (!example.ok) throw new Error('EXAMPLE в src/tools/url/logic.ts не раз�
 ---
 
 <div class="workbench" data-url-tool>
-  <div class="pane">
-    <label class="field-label" for="url-input">URL или текст</label>
-    <textarea
-      id="url-input"
-      class="input"
-      data-input
-      spellcheck="false"
-      autocomplete="off"
-      autocapitalize="off"
-      placeholder="Вставьте URL, percent-строку или текст"
-      autofocus></textarea>
-    <div class="notice notice-error" role="alert" data-error hidden></div>
-  </div>
-
-  <div class="pane">
-    <div class="toolbar">
-      <fieldset class="chips">
-        <legend class="visually-hidden">Что сделать</legend>
-        <label><input type="radio" name="url-mode" value="parse" checked />Разобрать URL</label>
-        <label><input type="radio" name="url-mode" value="decode" />Декодировать</label>
-        <label><input type="radio" name="url-mode" value="encode" />URL-кодировать</label>
-      </fieldset>
+  <section class="card">
+    <div class="card-head">
+      <label class="card-title" for="url-input">URL или текст</label>
+      <span class="count-badge" data-char-count>0&nbsp;симв.</span>
     </div>
-    <div class="result-head">
-      <h2 class="field-label" data-result-label>Пример</h2>
+    <div class="card-body">
+      <textarea
+        id="url-input"
+        class="input"
+        data-input
+        spellcheck="false"
+        autocomplete="off"
+        autocapitalize="off"
+        placeholder="Вставьте URL, percent-строку или текст"
+        autofocus></textarea>
+      <div class="notice notice-error" role="alert" data-error hidden></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title" data-result-label>Пример</h2>
       <div class="actions">
-        <button type="button" class="btn btn-primary" data-copy>Скопировать</button>
-        <button type="button" class="btn" data-clear>Очистить</button>
+        <button type="button" class="btn btn-small" data-copy>
+          <Icon name="copy" /><span class="btn-text">Скопировать</span>
+        </button>
+        <button type="button" class="btn btn-small btn-ghost" data-clear>
+          <Icon name="eraser" /><span class="btn-text">Очистить</span>
+        </button>
       </div>
     </div>
+    <div class="card-body">
+      <div class="toolbar">
+        <fieldset class="segmented">
+          <legend class="visually-hidden">Что сделать</legend>
+          <label><input type="radio" name="url-mode" value="parse" checked />Разобрать URL</label>
+          <label><input type="radio" name="url-mode" value="decode" />Декодировать</label>
+          <label><input type="radio" name="url-mode" value="encode" />URL-кодировать</label>
+        </fieldset>
+      </div>
 
-    <pre class="code wrap" data-output tabindex="0" aria-label="Результат" hidden></pre>
+      <pre class="code wrap" data-output tabindex="0" role="region" aria-label="Результат" hidden>
+      </pre>
 
-    <div data-parsed>
-      <dl class="components" data-components>
-        {
-          example.components.map((c) => (
-            <div class="row">
-              <dt>{c.name}</dt>
-              <dd>
-                <code>{c.value}</code>
-                <button
-                  type="button"
-                  class="btn btn-small"
-                  data-copy-text={c.value}
-                  aria-label={`Скопировать: ${c.name}`}
-                >
-                  Скопировать
-                </button>
-              </dd>
-            </div>
-          ))
-        }
-      </dl>
-      <div data-query-section hidden={example.query.length === 0}>
-        <h3 class="field-label">Параметры query</h3>
-        <div class="table-wrap">
-          <table class="query">
-            <thead>
-              <tr>
-                <th scope="col">Ключ</th>
-                <th scope="col">Значение</th>
-                <th scope="col"><span class="visually-hidden">Действия</span></th>
-              </tr>
-            </thead>
-            <tbody data-query>
-              {
-                example.query.map((row) => (
-                  <tr>
-                    <td>
-                      <code>{row.key}</code>
-                    </td>
-                    <td>
-                      <code>{row.value}</code>
-                    </td>
-                    <td class="cell-actions">
-                      <button
-                        type="button"
-                        class="btn btn-small"
-                        data-copy-text={row.value}
-                        aria-label={`Скопировать значение ${row.key}`}
-                      >
-                        Значение
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-small"
-                        data-copy-text={row.raw}
-                        aria-label={`Скопировать пару ${row.key}`}
-                      >
-                        Пару
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              }
-            </tbody>
-          </table>
+      <div data-parsed>
+        <dl class="components" data-components>
+          {
+            example.components.map((c) => (
+              <div class="row">
+                <dt>{c.name}</dt>
+                <dd>
+                  <code>{c.value}</code>
+                  <button
+                    type="button"
+                    class="btn btn-small"
+                    data-copy-text={c.value}
+                    aria-label={`Скопировать: ${c.name}`}
+                  >
+                    Скопировать
+                  </button>
+                </dd>
+              </div>
+            ))
+          }
+        </dl>
+        <div data-query-section hidden={example.query.length === 0}>
+          <h3 class="part-title">Параметры query</h3>
+          <div class="table-wrap">
+            <table class="query">
+              <thead>
+                <tr>
+                  <th scope="col">Ключ</th>
+                  <th scope="col">Значение</th>
+                  <th scope="col"><span class="visually-hidden">Действия</span></th>
+                </tr>
+              </thead>
+              <tbody data-query>
+                {
+                  example.query.map((row) => (
+                    <tr>
+                      <td>
+                        <code>{row.key}</code>
+                      </td>
+                      <td>
+                        <code>{row.value}</code>
+                      </td>
+                      <td class="cell-actions">
+                        <button
+                          type="button"
+                          class="btn btn-small"
+                          data-copy-text={row.value}
+                          aria-label={`Скопировать значение ${row.key}`}
+                        >
+                          Значение
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-small"
+                          data-copy-text={row.raw}
+                          aria-label={`Скопировать пару ${row.key}`}
+                        >
+                          Пару
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </div>
 
 <script>
@@ -117,40 +130,6 @@ if (!example.ok) throw new Error('EXAMPLE в src/tools/url/logic.ts не раз�
 </script>
 
 <style>
-  .workbench {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-6);
-    margin-top: var(--space-6);
-  }
-
-  @media (max-width: 900px) {
-    .workbench {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
-  .toolbar {
-    margin-bottom: var(--space-3);
-  }
-
-  .result-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    margin-bottom: var(--space-2);
-  }
-
-  .result-head h2 {
-    margin: 0;
-  }
-
-  .actions {
-    display: flex;
-    gap: var(--space-2);
-  }
-
   .wrap {
     max-height: 640px;
     white-space: pre-wrap;
@@ -192,8 +171,11 @@ if (!example.ok) throw new Error('EXAMPLE в src/tools/url/logic.ts не раз�
     color: var(--text-strong);
   }
 
-  h3 {
+  .part-title {
     margin: var(--space-6) 0 var(--space-2);
+    font: var(--type-ui);
+    font-weight: 600;
+    color: var(--text-strong);
   }
 
   .table-wrap {

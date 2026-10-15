@@ -1,29 +1,38 @@
 ---
 // Поле автоопределения на главной. Чипсы кандидатов и результат строит ui.ts.
+import Icon from '../ui/Icon.astro';
 ---
 
-<section class="detector" data-detector>
-  <label class="field-label" for="detect-input">Вставьте что угодно</label>
-  <textarea
-    id="detect-input"
-    class="input"
-    data-input
-    spellcheck="false"
-    autocomplete="off"
-    autocapitalize="off"
-    placeholder="JWT, JSON, UUID, URL, percent-строка, timestamp или base64"
-    autofocus></textarea>
-  <p class="notice notice-warning" data-too-big hidden></p>
+<section class="detector card" data-detector>
+  <div class="card-head">
+    <label class="card-title" for="detect-input">Вставьте что угодно</label>
+    <span class="count-badge" data-char-count>0&nbsp;симв.</span>
+  </div>
+  <div class="card-body">
+    <textarea
+      id="detect-input"
+      class="input"
+      data-input
+      spellcheck="false"
+      autocomplete="off"
+      autocapitalize="off"
+      placeholder="JWT, JSON, UUID, URL, percent-строка, timestamp или base64"
+      autofocus></textarea>
+    <p class="notice notice-warning" data-too-big hidden></p>
 
-  <div class="result" data-result hidden>
-    <fieldset class="chips" data-chips>
-      <legend class="visually-hidden">Что сделать с вводом</legend>
-    </fieldset>
-    <div class="result-head" data-result-head hidden>
-      <a class="tool-link" data-tool-link href="/"></a>
-      <button type="button" class="btn btn-primary" data-copy>Скопировать</button>
+    <div class="result" data-result hidden>
+      <fieldset class="chips" data-chips>
+        <legend class="visually-hidden">Что сделать с вводом</legend>
+      </fieldset>
+      <div class="result-head" data-result-head hidden>
+        <a class="tool-link" data-tool-link href="/"></a>
+        <button type="button" class="btn btn-small" data-copy>
+          <Icon name="copy" /><span class="btn-text">Скопировать</span>
+        </button>
+      </div>
+      <pre class="code wrap" data-output tabindex="0" role="region" aria-label="Результат" hidden>
+      </pre>
     </div>
-    <pre class="code wrap" data-output tabindex="0" aria-label="Результат" hidden></pre>
   </div>
 </section>
 

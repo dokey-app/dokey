@@ -3,7 +3,7 @@ import { routes } from './pages.ts';
 
 test('главная открывается и называет себя', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('DoKey');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Утилиты разработчика');
   await expect(page.getByRole('link', { name: 'DoKey' })).toHaveAttribute('href', '/');
 });
 

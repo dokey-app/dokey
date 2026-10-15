@@ -2,14 +2,15 @@
 import Detector from '../detect/Detector.astro';
 import Base from '../layouts/Base.astro';
 import { tools } from '../registry/tools.ts';
+import Icon from '../ui/Icon.astro';
 ---
 
 <Base
   title="DoKey — утилиты разработчика в браузере"
   description="JSON, JWT, Base64, URL, Unix timestamp, UUID и ULID в одной вкладке. Вставленное распознаётся само, ввод не покидает браузер."
 >
-  <h1>DoKey</h1>
-  <p class="lead">Утилиты разработчика в браузере. Ввод не покидает вкладку.</p>
+  <h1>Утилиты разработчика</h1>
+  <p class="lead">Всё считается в этой вкладке — ввод не покидает браузер.</p>
 
   <Detector />
 
@@ -19,8 +20,13 @@ import { tools } from '../registry/tools.ts';
       {
         tools.map((tool) => (
           <li>
-            <a href={`/${tool.id}`}>{tool.name}</a>
-            <p>{tool.title}</p>
+            <a class="tool-card" href={`/${tool.id}`}>
+              <span class="tool-icon">
+                <Icon name={tool.icon} size={22} />
+              </span>
+              <span class="tool-name">{tool.name}</span>
+              <span class="tool-desc">{tool.title}</span>
+            </a>
           </li>
         ))
       }
@@ -39,26 +45,66 @@ import { tools } from '../registry/tools.ts';
 
   .catalog ul {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
     gap: var(--space-4);
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  .catalog li {
+  /* ToolCard дизайн-системы: плитка-ссылка, иконка в мягкой акцентной плашке. */
+  .tool-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    height: 100%;
     padding: var(--space-4);
+    color: inherit;
+    text-decoration: none;
     background: var(--surface-card);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xs);
+    transition:
+      transform var(--duration-fast) var(--ease-standard),
+      box-shadow var(--duration-fast) var(--ease-standard),
+      border-color var(--duration-fast) var(--ease-standard);
   }
 
-  .catalog a {
-    font-weight: 600;
+  .tool-card:hover {
+    transform: translateY(-1px);
+    border-color: var(--border-accent);
+    box-shadow: var(--shadow-md);
   }
 
-  .catalog p {
-    margin: var(--space-1) 0 0;
+  .tool-card:focus-visible {
+    border-radius: var(--radius-xl);
+  }
+
+  .tool-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-bottom: var(--space-2);
+    color: var(--text-link);
+    background: var(--surface-accent-soft);
+    border-radius: var(--radius-md);
+  }
+
+  .tool-icon :global(.icon) {
+    width: 22px;
+    height: 22px;
+    vertical-align: 0;
+  }
+
+  .tool-name {
+    font-weight: 700;
+    color: var(--text-strong);
+  }
+
+  .tool-desc {
     font: var(--type-ui);
     color: var(--text-muted);
   }

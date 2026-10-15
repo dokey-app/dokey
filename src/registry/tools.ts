@@ -10,10 +10,12 @@ export interface Faq {
 export interface Tool {
   /** kebab-case, совпадает с сегментом маршрута: `/jwt`. */
   id: string;
-  /** Продуктовое имя, не переводится: «JWT Inspector». */
+  /** Продуктовое имя, не переводится: «JWT Inspector». Это и H1 страницы. */
   name: string;
-  /** <title> и H1 с поисковой формулировкой. */
+  /** <title> с поисковой формулировкой и подпись в каталоге. */
   title: string;
+  /** Иконка Lucide из словаря дизайн-системы: braces, key-round, binary, link, clock, fingerprint. */
+  icon: string;
   /** meta description и вводный абзац, ≤ 240 знаков. */
   description: string;
   /** 3–5 вопросов лендинга. */
@@ -26,6 +28,7 @@ export const tools: readonly Tool[] = [
   {
     id: 'json',
     name: 'JSON Workbench',
+    icon: 'braces',
     title: 'Форматирование и проверка JSON',
     description:
       'JSON Workbench форматирует, минифицирует и проверяет JSON в браузере: ошибка показывается со строкой и позицией, числа не переписываются, документ не покидает вкладку.',
@@ -52,6 +55,7 @@ export const tools: readonly Tool[] = [
   {
     id: 'jwt',
     name: 'JWT Inspector',
+    icon: 'key-round',
     title: 'Декодировать JWT и проверить подпись',
     description:
       'JWT Inspector разбирает header и payload, показывает exp, iat и nbf в UTC и местном времени и проверяет подпись HS256 ключом. Токен и ключ не покидают вкладку.',
@@ -78,6 +82,7 @@ export const tools: readonly Tool[] = [
   {
     id: 'base64',
     name: 'Base64 Encoder/Decoder',
+    icon: 'binary',
     title: 'Base64: кодировать и декодировать текст и файлы',
     description:
       'Base64 Encoder/Decoder кодирует и декодирует текст в UTF-8 и файлы, стандартным и URL-safe алфавитом. Направление выбирается по вводу; данные не покидают вкладку.',
@@ -104,6 +109,7 @@ export const tools: readonly Tool[] = [
   {
     id: 'url',
     name: 'URL Encoder/Decoder',
+    icon: 'link',
     title: 'Декодировать и разобрать URL, кодировать текст для URL',
     description:
       'URL Encoder/Decoder декодирует percent-строки, кодирует текст для URL и раскладывает адрес на схему, хост, порт, путь, параметры query и фрагмент. Ввод не покидает вкладку.',
@@ -130,6 +136,7 @@ export const tools: readonly Tool[] = [
   {
     id: 'unix-timestamp',
     name: 'Unix Timestamp Converter',
+    icon: 'clock',
     title: 'Конвертер Unix timestamp в дату и обратно',
     description:
       'Unix Timestamp Converter переводит секунды и миллисекунды Unix-времени в ISO 8601, UTC и местное время со смещением, а дату ISO 8601 — обратно в секунды. Ввод не покидает вкладку.',
@@ -152,6 +159,7 @@ export const tools: readonly Tool[] = [
   {
     id: 'uuid',
     name: 'UUID/ULID Generator',
+    icon: 'fingerprint',
     title: 'Генератор UUID v4, v7 и ULID, проверка UUID',
     description:
       'UUID/ULID Generator создаёт UUID v4, UUID v7 и ULID пакетом до 1000 значений на криптографическом генераторе браузера и разбирает UUID и ULID: версия, вариант, время.',
