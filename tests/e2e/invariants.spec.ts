@@ -25,7 +25,9 @@ for (const route of routes) {
     await page.goto(route, { waitUntil: 'networkidle' });
     const historyBefore = await page.evaluate(() => history.length);
 
-    const fields = page.locator('textarea, input:not([type=file]):not([type=checkbox])');
+    const fields = page.locator(
+      'textarea, input:not([type]), input[type=text], input[type=search], input[type=url], input[type=password], input[type=number]',
+    );
     for (const field of await fields.all()) {
       if (await field.isEditable()) await field.fill(SECRET);
     }

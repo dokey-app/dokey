@@ -1,0 +1,213 @@
+---
+// Разметка JSON Workbench. Пример форматируется на сборке — виден без JS.
+import { EXAMPLE, parseJson, stringify } from './logic.ts';
+
+const parsed = parseJson(EXAMPLE);
+if (!parsed.ok) throw new Error('EXAMPLE в src/tools/json/logic.ts не разбирается');
+const example = stringify(parsed.value, { indent: 2, sortKeys: false });
+---
+
+<div class="workbench" data-json-tool>
+  <div class="pane">
+    <label class="field-label" for="json-input">JSON</label>
+    <textarea
+      id="json-input"
+      class="input"
+      data-input
+      spellcheck="false"
+      autocomplete="off"
+      autocapitalize="off"
+      placeholder="Вставьте или введите JSON"
+      autofocus></textarea>
+    <div class="notice notice-error" role="alert" data-error hidden>
+      <span data-error-text></span>
+      <div>
+        <button type="button" class="btn btn-small" data-goto-error>Перейти к ошибке</button>
+      </div>
+    </div>
+    <div class="notice notice-warning" data-threshold hidden>
+      <span data-threshold-text></span>
+      <div>
+        <button type="button" class="btn btn-primary" data-process hidden>Обработать</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pane">
+    <div class="toolbar">
+      <fieldset class="chips">
+        <legend class="visually-hidden">Вид результата</legend>
+        <label><input type="radio" name="json-mode" value="format" checked />Форматировать</label>
+        <label><input type="radio" name="json-mode" value="minify" />Минифицировать</label>
+      </fieldset>
+      <label class="check"><input type="checkbox" data-sort />Сортировать ключи</label>
+    </div>
+    <div class="result-head">
+      <h2 class="field-label" data-result-label>Пример</h2>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" data-copy>Скопировать</button>
+        <button type="button" class="btn" data-clear>Очистить</button>
+      </div>
+    </div>
+    <pre class="code" data-output tabindex="0" aria-labelledby="json-result">{example}</pre>
+    <span id="json-result" class="visually-hidden">Результат</span>
+  </div>
+</div>
+
+<section class="tree-section" data-tree-section hidden>
+  <div class="result-head">
+    <h2 class="field-label">Дерево</h2>
+    <div class="actions">
+      <button type="button" class="btn btn-small" data-expand>Развернуть</button>
+      <button type="button" class="btn btn-small" data-collapse>Свернуть</button>
+    </div>
+  </div>
+  <div class="pathbar">
+    <span class="field-label">Путь</span>
+    <code data-selected-path>$</code>
+    <button type="button" class="btn btn-small" data-copy-path>Скопировать путь</button>
+  </div>
+  <div class="code tree" data-tree></div>
+</section>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .workbench {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-6);
+  }
+
+  @media (max-width: 900px) {
+    .workbench {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-3);
+  }
+
+  .check {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--target-min);
+    font: var(--type-ui);
+    cursor: pointer;
+  }
+
+  .result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+
+  .result-head h2 {
+    margin: 0;
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  [data-output] {
+    max-height: 640px;
+  }
+
+  .tree-section {
+    margin-top: var(--space-8);
+  }
+
+  .tree {
+    white-space: normal;
+    max-height: 720px;
+  }
+
+  /* Узлы дерева создаёт tree.ts — scoped-стили до них не дотягиваются. */
+  .tree :global(ul) {
+    margin: 0;
+    padding-left: var(--space-6);
+    list-style: none;
+  }
+
+  .tree :global(.tree-root) {
+    padding-left: 0;
+  }
+
+  .tree :global(li) {
+    margin: 1px 0;
+    overflow-wrap: anywhere;
+  }
+
+  .tree :global(summary) {
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+  }
+
+  .tree :global(.tree-key) {
+    color: var(--code-key);
+  }
+
+  .tree :global(.tree-index),
+  .tree :global(.tree-punct),
+  .tree :global(.tree-meta) {
+    color: var(--code-punct);
+  }
+
+  .tree :global(.tree-string) {
+    color: var(--code-string);
+  }
+
+  .tree :global(.tree-number) {
+    color: var(--code-number);
+  }
+
+  .tree :global(.tree-true),
+  .tree :global(.tree-false),
+  .tree :global(.tree-null) {
+    color: var(--code-boolean);
+  }
+
+  .tree :global([data-path]) {
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+
+  .tree :global(.is-selected) {
+    background: rgb(255 255 255 / 0.1);
+  }
+
+  .pathbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+
+  .pathbar .field-label {
+    margin: 0;
+  }
+
+  .pathbar code {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--text-strong);
+  }
+
+  .tree :global(.tree-more) {
+    margin: var(--space-2) 0 0 var(--space-6);
+  }
+</style>

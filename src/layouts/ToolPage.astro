@@ -1,0 +1,52 @@
+---
+// Страница инструмента = лендинг: H1, вводный абзац и FAQ видны без JS; сам инструмент — слот.
+import type { Tool } from '../registry/tools.ts';
+import Base from './Base.astro';
+
+interface Props {
+  tool: Tool;
+}
+
+const { tool } = Astro.props;
+---
+
+<Base title={`${tool.title} — DoKey`} description={tool.description}>
+  <h1>{tool.title}</h1>
+  <p class="intro">{tool.description}</p>
+  <slot />
+  <section class="faq" aria-labelledby="faq-title">
+    <h2 id="faq-title">Вопросы</h2>
+    <dl>
+      {
+        tool.faq.map((item) => (
+          <>
+            <dt>{item.q}</dt>
+            <dd>{item.a}</dd>
+          </>
+        ))
+      }
+    </dl>
+  </section>
+</Base>
+
+<style>
+  .intro {
+    max-width: 60ch;
+    color: var(--text-muted);
+  }
+
+  .faq {
+    max-width: 70ch;
+    margin-top: var(--space-12);
+  }
+
+  dt {
+    margin-top: var(--space-4);
+    font-weight: 600;
+    color: var(--text-strong);
+  }
+
+  dd {
+    margin: var(--space-1) 0 0;
+  }
+</style>
