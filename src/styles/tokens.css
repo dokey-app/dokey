@@ -109,6 +109,7 @@
   --control-pad-x-md: 14px;
   --page-max: 1240px;
   --page-gutter: var(--space-6);
+  --sidebar-width: 244px;
   --topbar-height: 56px;
   --radius-sm: 6px;
   --radius-md: 8px;

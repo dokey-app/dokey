@@ -400,7 +400,12 @@ textarea.input:focus-visible {
   margin-top: var(--space-6);
 }
 
-@media (max-width: 900px) {
+/* Колонки — по ширине контента, а не окна: рядом сайдбар. */
+.page {
+  container-type: inline-size;
+}
+
+@container (max-width: 700px) {
   .workbench {
     grid-template-columns: minmax(0, 1fr);
   }

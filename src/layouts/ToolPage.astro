@@ -12,7 +12,7 @@ const { tool } = Astro.props;
 ---
 
 <Base title={`${tool.title} — DoKey`} description={tool.description}>
-  <nav class="crumbs" aria-label="Навигация">
+  <nav class="crumbs" aria-label="Путь" slot="crumbs">
     <a href="/">Инструменты</a>
     <span aria-hidden="true">/</span>
     <span aria-current="page">{tool.name}</span>
@@ -39,7 +39,6 @@ const { tool } = Astro.props;
   .crumbs {
     display: flex;
     gap: var(--space-2);
-    margin-bottom: var(--space-4);
     font: var(--type-ui);
     color: var(--text-muted);
   }
