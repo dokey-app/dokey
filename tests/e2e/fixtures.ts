@@ -21,11 +21,17 @@ export const test = base.extend({
   page: async ({ page }, use) => {
     if (!CSP) throw new Error('В dist/_headers нет Content-Security-Policy');
     await page.route(`${BASE_URL}/**`, async (route) => {
-      const response = await route.fetch();
-      await route.fulfill({
-        response,
-        headers: { ...response.headers(), 'content-security-policy': CSP },
-      });
+      try {
+        const response = await route.fetch();
+        await route.fulfill({
+          response,
+          headers: { ...response.headers(), 'content-security-policy': CSP },
+        });
+      } catch (error) {
+        // Тест закончился или страница ушла по ссылке, пока грузились шрифты: запрос уже
+        // никому не нужен. Любая другая ошибка — настоящая.
+        if (!/disposed|closed/i.test(String(error))) throw error;
+      }
     });
     await page.addInitScript(() => {
       window.dokeyCspViolations = [];

@@ -1,10 +1,12 @@
 ---
-// Единственный макет: шапка со счётчиком внешних запросов, статус-регионы, подвал.
+// Единственный макет: сайдбар-навигация, вставная панель с шапкой (крошки и счётчик внешних
+// запросов), статус-регионы. На узком экране сайдбар — popover по кнопке «Меню», без JS.
 // noindex держится до релиза v1.0.0 (ROADMAP, срез 10).
 import '@fontsource-variable/manrope';
 import '@fontsource-variable/jetbrains-mono';
 import '../styles/tokens.css';
 import '../styles/base.css';
+import { tools } from '../registry/tools.ts';
 import Icon from '../ui/Icon.astro';
 
 interface Props {
@@ -14,6 +16,9 @@ interface Props {
 
 const { title, description } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+// build.format = 'file': на сборке путь страницы — /jwt.html, ссылки — /jwt.
+const path = Astro.url.pathname.replace(/(index)?\.html$/, '');
+const current = (href: string) => (path === href ? 'page' : undefined);
 ---
 
 <html lang="ru">
@@ -27,22 +32,77 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <header class="topbar">
-      <a class="brand" href="/"
-        ><span class="brand-do">Do</span><span class="brand-key">Key</span></a
-      >
-      <p class="egress">
-        <Icon name="shield-check" />
-        Внешних запросов: <span data-egress-count>0</span> ·
-        <a href="/how-to-verify">Как это проверить</a>
-      </p>
-    </header>
-    <main id="main" class="page">
-      <slot />
-    </main>
-    <footer class="footer">
-      <a href="https://github.com/dokey-app/dokey">Исходный код на GitHub</a>
-    </footer>
+    <nav id="sidebar" class="sidebar" aria-label="Навигация" popover>
+      <div class="sidebar-head">
+        <a class="brand" href="/"
+          ><span class="brand-do">Do</span><span class="brand-key">Key</span></a
+        >
+        <button
+          class="btn btn-ghost icon-btn mobile-only"
+          type="button"
+          popovertarget="sidebar"
+          popovertargetaction="hide"
+        >
+          <Icon name="x" /><span class="visually-hidden">Закрыть меню</span>
+        </button>
+      </div>
+      <ul class="items">
+        <li>
+          <a class="item" href="/" aria-current={current('/')}
+            ><Icon name="scan-search" /><span>Автоопределение</span></a
+          >
+        </li>
+      </ul>
+      <details class="group" open>
+        <summary><span>Инструменты</span><Icon name="chevron-down" size={14} /></summary>
+        <ul class="items">
+          {
+            tools.map((tool) => (
+              <li>
+                <a class="item" href={`/${tool.id}`} aria-current={current(`/${tool.id}`)}>
+                  <Icon name={tool.icon} />
+                  <span>{tool.name}</span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </details>
+      <details class="group group-end" open>
+        <summary><span>DoKey</span><Icon name="chevron-down" size={14} /></summary>
+        <ul class="items">
+          <li>
+            <a class="item" href="/how-to-verify" aria-current={current('/how-to-verify')}
+              ><Icon name="shield-check" /><span>Как это проверить</span></a
+            >
+          </li>
+          <li>
+            <a class="item" href="https://github.com/dokey-app/dokey"
+              ><Icon name="code" /><span>Исходный код</span></a
+            >
+          </li>
+        </ul>
+      </details>
+    </nav>
+    <div class="panel">
+      <header class="panel-head">
+        <button class="btn btn-ghost icon-btn mobile-only" type="button" popovertarget="sidebar">
+          <Icon name="menu" /><span class="visually-hidden">Меню</span>
+        </button>
+        <a class="brand mobile-only" href="/"
+          ><span class="brand-do">Do</span><span class="brand-key">Key</span></a
+        >
+        <slot name="crumbs" />
+        <p class="egress">
+          <Icon name="shield-check" />
+          Внешних запросов: <span data-egress-count>0</span> ·
+          <a href="/how-to-verify">Как это проверить</a>
+        </p>
+      </header>
+      <main id="main" class="page">
+        <slot />
+      </main>
+    </div>
     <div class="visually-hidden" role="status" aria-live="polite" data-status></div>
     <div class="visually-hidden" role="alert" data-alert></div>
     <script>
@@ -52,21 +112,37 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 </html>
 
 <style>
-  .topbar {
+  /* Вставная панель (как в рефе Linear): фон окна — зона сайдбара, контент — панель поверх. */
+  body {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    min-height: 100dvh;
+    background: var(--surface-sunken);
+  }
+
+  .sidebar {
     position: sticky;
     top: 0;
-    z-index: 1;
+    inset-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    width: auto;
+    height: 100dvh;
+    margin: 0;
+    padding: var(--space-3) var(--space-3) var(--space-4);
+    overflow-y: auto;
+    color: var(--text-body);
+    background: transparent;
+    border: 0;
+  }
+
+  .sidebar-head {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
     justify-content: space-between;
-    gap: var(--space-1) var(--space-4);
-    min-height: var(--topbar-height);
-    padding: 0 var(--page-gutter);
-    /* Единственное место системы с размытием: полупрозрачная шапка поверх контента. */
-    background: color-mix(in srgb, var(--surface-card) 88%, transparent);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--border-subtle);
+    min-height: 40px;
+    padding: 0 10px;
   }
 
   /* Вордмарк набором: Manrope 800, трекинг −0.03em, вторая часть — акцентом. */
@@ -84,12 +160,122 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     color: var(--text-link);
   }
 
+  .items {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* SidebarItem дизайн-системы: строка 32 px, иконка 16, активный — мягкий акцент. */
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 32px;
+    padding: 0 10px;
+    font: var(--type-ui);
+    color: var(--text-body);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: background var(--duration-fast) var(--ease-standard);
+  }
+
+  .item:hover {
+    color: var(--text-strong);
+    background: var(--surface-hover);
+  }
+
+  .item[aria-current='page'] {
+    color: var(--text-link);
+    background: var(--surface-accent-soft);
+  }
+
+  .item:focus-visible {
+    border-radius: var(--radius-md);
+  }
+
+  .item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .item :global(.icon) {
+    flex: none;
+    vertical-align: 0;
+  }
+
+  .group summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    width: fit-content;
+    min-height: var(--target-min);
+    margin-bottom: var(--space-1);
+    padding: 0 10px;
+    font: var(--type-label);
+    color: var(--text-muted);
+    list-style: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+  }
+
+  .group summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .group summary:hover {
+    color: var(--text-strong);
+  }
+
+  .group summary :global(.icon) {
+    transition: transform var(--duration-fast) var(--ease-standard);
+  }
+
+  .group:not([open]) summary :global(.icon) {
+    transform: rotate(-90deg);
+  }
+
+  .group-end {
+    margin-top: auto;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    margin: var(--space-2) var(--space-2) var(--space-2) 0;
+    background: var(--surface-page);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+  }
+
+  .panel-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    min-height: var(--topbar-height);
+    padding: 0 var(--page-gutter);
+    /* Единственное место системы с размытием: полупрозрачная шапка поверх контента. */
+    background: color-mix(in srgb, var(--surface-page) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
   .egress {
     display: inline-flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0 6px;
-    margin: 0;
+    margin: 0 0 0 auto;
     font: var(--type-ui);
     color: var(--text-muted);
   }
@@ -103,24 +289,67 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     color: var(--text-strong);
   }
 
+  .icon-btn {
+    width: var(--control-height-md);
+    padding: 0;
+  }
+
   .page {
+    width: 100%;
     max-width: var(--page-max);
     margin: 0 auto;
     padding: var(--space-8) var(--page-gutter) var(--space-12);
   }
 
-  .footer {
-    max-width: var(--page-max);
-    margin: 0 auto;
-    padding: var(--space-6) var(--page-gutter);
-    border-top: 1px solid var(--border-subtle);
-    font: var(--type-ui);
+  .mobile-only {
+    display: none;
   }
 
-  @media (max-width: 640px) {
-    .topbar,
-    .page,
-    .footer {
+  /* Узкий экран: панель во всю ширину, сайдбар — выдвижной popover по кнопке «Меню». */
+  @media (max-width: 899px) {
+    body {
+      display: block;
+      background: var(--surface-page);
+    }
+
+    .mobile-only {
+      display: inline-flex;
+    }
+
+    .sidebar:not(:popover-open) {
+      display: none;
+    }
+
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: min(300px, 85vw);
+      background: var(--surface-card);
+      border-right: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-md);
+    }
+
+    .sidebar::backdrop {
+      background: rgb(14 16 20 / 0.4);
+    }
+
+    .panel {
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .panel-head {
+      gap: var(--space-1) var(--space-2);
+      border-radius: 0;
+    }
+
+    .panel-head :global(.crumbs) {
+      display: none;
+    }
+
+    .panel-head,
+    .page {
       padding-inline: var(--space-4);
     }
   }

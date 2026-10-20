@@ -5,7 +5,7 @@ test('ссылка «Как это проверить» есть в шапке �
   page,
 }) => {
   await page.goto('/json');
-  await page.getByRole('link', { name: 'Как это проверить' }).click();
+  await page.getByRole('banner').getByRole('link', { name: 'Как это проверить' }).click();
   await expect(page).toHaveURL(/\/how-to-verify$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Как это проверить');
 });
