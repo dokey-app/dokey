@@ -1,0 +1,28 @@
+# DoKey behind the SHARED Traefik of the dev machine (/srv/dev/stacks/traefik).
+# That Traefik has only the file provider: the route lives in traefik-dokey.yaml, which up.sh
+# copies to /srv/dev/stacks/traefik/dynamic/dokey.yaml. The target is the CONTAINER NAME on
+# dev-proxy. Production is Cloudflare Workers (docs/ops.md); this is a local preview only.
+#
+#   deploy/local-traefik/up.sh     →   http://dokey.localhost:18080 (from the laptop: forward port 18080)
+#   deploy/local-traefik/down.sh
+name: dokey-local
+
+services:
+  web:
+    container_name: dokey-web
+    build:
+      context: .
+    image: dokey-web:local
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    networks:
+      - dev-proxy
+
+networks:
+  dev-proxy:
+    external: true
+    name: dev-proxy

@@ -54,6 +54,22 @@ Environment `production` должен разрешать развёртыван�
 **Откат:** `pnpm exec wrangler rollback` (к предыдущей версии Worker) — либо `git revert` и
 push в `main`. Ручной деплой с ноутбука — только при аварии.
 
+## Локальный просмотр через Traefik
+
+На dev-машине сборка поднимается за общим Traefik (`/srv/dev/stacks/traefik`, только file
+provider, порт `127.0.0.1:18080`):
+
+```bash
+deploy/local-traefik/up.sh        # pnpm build → образ nginx → маршрут dokey.localhost → проверки
+deploy/local-traefik/up.sh check  # только проверки
+deploy/local-traefik/down.sh      # остановить и убрать маршрут
+```
+
+Открывать `http://dokey.localhost:18080` (с ноутбука — проброс порта 18080). nginx повторяет
+поведение Cloudflare: `/jwt` → `jwt.html`, 404-страница, кеш `/_astro/*`. Заголовки
+безопасности `up.sh` генерирует из `public/_headers` и проверяет, что отдаваемая CSP совпадает с
+файлом. Это только просмотр: прод — Cloudflare Workers.
+
 ## Ротация токена (раз в 6 месяцев)
 
 1. Cloudflare → My Profile → API Tokens → Create Token → Custom: одно право
