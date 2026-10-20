@@ -12,3 +12,7 @@ test-results/
 playwright-report/
 blob-report/
 coverage/
+
+# Local Traefik preview: build artefacts copied by deploy/local-traefik/up.sh
+deploy/local-traefik/dist/
+deploy/local-traefik/headers.conf

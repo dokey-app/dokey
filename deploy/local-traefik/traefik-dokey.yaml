@@ -1,0 +1,14 @@
+# Route of the DoKey local preview for the SHARED Traefik of the dev machine.
+# up.sh copies this file to /srv/dev/stacks/traefik/dynamic/dokey.yaml, down.sh removes it.
+http:
+  routers:
+    dokey:
+      rule: 'Host(`dokey.localhost`)'
+      entryPoints: [web]
+      service: dokey
+
+  services:
+    dokey:
+      loadBalancer:
+        servers:
+          - url: 'http://dokey-web:80'
