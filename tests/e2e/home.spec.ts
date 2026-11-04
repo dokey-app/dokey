@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { tools } from '../../src/registry/tools.ts';
 import { EXAMPLE as JWT } from '../../src/tools/jwt/logic.ts';
 import { expect, test } from './fixtures.ts';
 
@@ -14,7 +15,7 @@ test.beforeEach(async ({ page }) => {
 test('до ввода — поле в фокусе, результата нет, каталог из реестра', async ({ page }) => {
   await expect(page.getByLabel('Вставьте что угодно')).toBeFocused();
   await expect(page.locator('[data-result]')).toBeHidden();
-  await expect(page.locator('.catalog li')).toHaveCount(6);
+  await expect(page.locator('.catalog li')).toHaveCount(tools.length);
 });
 
 test('JWT распознаётся и применяется сразу; ссылка ведёт в инструмент', async ({ page }) => {

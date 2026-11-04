@@ -8,12 +8,7 @@ const DENIED = 'Браузер не дал доступ к буферу обме
  * действительно принял текст. Отказ браузера объясняется, а не прячется.
  */
 export async function copyText(button: HTMLButtonElement, text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    alertNow(DENIED);
-    return;
-  }
+  if (!(await writeClipboard(text))) return;
   // У кнопки с иконкой меняется только текст: иконка остаётся на месте.
   const target = button.querySelector<HTMLElement>('.btn-text') ?? button;
   const label = button.dataset['label'] ?? target.textContent ?? '';
@@ -23,4 +18,15 @@ export async function copyText(button: HTMLButtonElement, text: string): Promise
   window.setTimeout(() => {
     target.textContent = label;
   }, COPIED_MS);
+}
+
+/** Запись в буфер без смены подписи: true — буфер принял текст, отказ уже объяснён. */
+export async function writeClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    alertNow(DENIED);
+    return false;
+  }
 }

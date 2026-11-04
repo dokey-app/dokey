@@ -1,0 +1,9 @@
+---
+import ToolPage from '../layouts/ToolPage.astro';
+import { getTool } from '../registry/tools.ts';
+import NumeronymTool from '../tools/numeronym/NumeronymTool.astro';
+---
+
+<ToolPage tool={getTool('numeronym')}>
+  <NumeronymTool />
+</ToolPage>

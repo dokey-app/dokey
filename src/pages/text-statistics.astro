@@ -1,0 +1,9 @@
+---
+import ToolPage from '../layouts/ToolPage.astro';
+import { getTool } from '../registry/tools.ts';
+import TextStatisticsTool from '../tools/text-statistics/TextStatisticsTool.astro';
+---
+
+<ToolPage tool={getTool('text-statistics')}>
+  <TextStatisticsTool />
+</ToolPage>

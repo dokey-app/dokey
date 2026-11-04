@@ -1,0 +1,68 @@
+---
+import Icon from '../../ui/Icon.astro';
+---
+
+<div class="workbench" data-obfuscator-tool>
+  <section class="card">
+    <div class="card-head"><label class="card-title" for="obf-input">Строка</label></div>
+    <div class="card-body">
+      <textarea
+        id="obf-input"
+        class="input short"
+        data-input
+        spellcheck="false"
+        autocomplete="off"
+        placeholder="Вставьте строку"
+        autofocus></textarea>
+      <div class="form-grid options">
+        <div>
+          <label class="field-label" for="obf-first">Оставить в начале</label>
+          <input
+            id="obf-first"
+            class="input"
+            inputmode="numeric"
+            value="4"
+            data-first
+            autocomplete="off"
+          />
+        </div>
+        <div>
+          <label class="field-label" for="obf-last">Оставить в конце</label>
+          <input
+            id="obf-last"
+            class="input"
+            inputmode="numeric"
+            value="4"
+            data-last
+            autocomplete="off"
+          />
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" data-spaces checked />Не скрывать пробелы</label>
+      <div class="notice notice-error" role="alert" data-error hidden></div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Результат</h2>
+      <button type="button" class="btn btn-small" data-copy>
+        <Icon name="copy" /><span class="btn-text">Скопировать</span>
+      </button>
+    </div>
+    <div class="card-body"><pre class="code code-wrap" tabindex="0" data-output></pre></div>
+  </section>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .short {
+    min-height: 160px;
+  }
+
+  .options {
+    margin-top: var(--space-3);
+  }
+</style>

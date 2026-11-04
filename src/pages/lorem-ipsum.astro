@@ -1,0 +1,9 @@
+---
+import ToolPage from '../layouts/ToolPage.astro';
+import { getTool } from '../registry/tools.ts';
+import LoremTool from '../tools/lorem-ipsum/LoremTool.astro';
+---
+
+<ToolPage tool={getTool('lorem-ipsum')}>
+  <LoremTool />
+</ToolPage>
