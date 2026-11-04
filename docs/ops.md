@@ -32,6 +32,9 @@
 - `www` → apex редиректом, «Always Use HTTPS» включён.
 - В зоне **выключены** Managed robots.txt (источник — репозиторий) и Network Error Logging
   (иначе браузер шлёт отчёты на сторонний origin).
+- Web Analytics в зоне должен быть выключен: иначе край встраивает в HTML скрипт с
+  `static.cloudflareinsights.com`. CSP его блокирует, но счётчик на странице показывает не 0.
+  На 2026-11-03 он **включён** — ROADMAP, срез 10.
 - Почта (Cloudflare Email Routing): `privacy@`, `security@`, `conduct@dokey.ru`.
 - Registrar lock и автопродление включены у регистратора.
 
