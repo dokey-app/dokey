@@ -21,7 +21,7 @@ import { MAX_BATCH } from './logic.ts';
         <label class="count-label" for="uuid-count">Количество</label>
         <input
           id="uuid-count"
-          class="count"
+          class="input count"
           type="text"
           inputmode="numeric"
           value="1"
@@ -58,7 +58,7 @@ import { MAX_BATCH } from './logic.ts';
     <div class="card-body">
       <input
         id="uuid-inspect"
-        class="line"
+        class="input"
         type="text"
         data-inspect
         spellcheck="false"
@@ -89,24 +89,8 @@ import { MAX_BATCH } from './logic.ts';
     font: var(--type-ui);
   }
 
-  .count,
-  .line {
-    min-height: var(--control-height-md);
-    padding: 0 var(--space-3);
-    font: var(--type-code);
-    color: var(--text-strong);
-    background: var(--surface-card);
-    border: 1px solid var(--border-control);
-    border-radius: var(--radius-md);
-  }
-
   .count {
     width: 6em;
-  }
-
-  .line {
-    display: block;
-    width: 100%;
   }
 
   .hint {

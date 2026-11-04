@@ -26,14 +26,14 @@ body {
 h1 {
   margin: 0 0 var(--space-2);
   font: var(--type-h1);
-  letter-spacing: -0.025em;
+  letter-spacing: var(--tracking-tight);
   color: var(--text-strong);
 }
 
 h2 {
   margin: var(--space-8) 0 var(--space-3);
   font: var(--type-h2);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   color: var(--text-strong);
 }
 
@@ -43,11 +43,21 @@ p {
 
 a {
   color: var(--text-link);
+  text-decoration: none;
   text-underline-offset: 2px;
+  transition: color var(--duration-fast) var(--ease-standard);
 }
 
 a:hover {
   color: var(--text-link-hover);
+  text-decoration: underline;
+}
+
+/* Ссылка внутри фразы подчёркнута: одного цвета мало (WCAG 1.4.1). Отступление от кита. */
+p a,
+li a,
+dd a {
+  text-decoration: underline;
 }
 
 code,
@@ -58,10 +68,53 @@ samp {
   font-size: 0.92em;
 }
 
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  font: var(--type-code-sm);
+  color: var(--text-muted);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+}
+
+::selection {
+  color: var(--gray-950);
+  background: var(--accent-200);
+}
+
 :focus-visible {
   outline: none;
   box-shadow: var(--ring-focus);
   border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  ::selection {
+    color: #fff;
+    background: rgb(14 165 233 / 0.35);
+  }
 }
 
 .visually-hidden {
@@ -90,10 +143,9 @@ samp {
 
 .field-label {
   display: block;
-  margin: 0 0 var(--space-2);
-  font: var(--type-ui);
-  font-weight: 600;
-  color: var(--text-strong);
+  margin: 0 0 6px;
+  font: var(--type-label);
+  color: var(--text-body);
 }
 
 /* --- Карточка: поверхность, граница, радиус 14, тень xs; шапка — строка с границей --- */
@@ -110,16 +162,14 @@ samp {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-  min-height: 48px;
-  padding: var(--space-2) var(--space-4);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .card-title {
   margin: 0;
   font: var(--type-ui);
-  font-weight: 600;
   color: var(--text-strong);
 }
 
@@ -146,19 +196,22 @@ samp {
   min-height: var(--control-height-md);
   padding: 0 var(--control-pad-x-md);
   font: var(--type-ui);
+  letter-spacing: var(--tracking-snug);
   color: var(--text-strong);
   text-decoration: none;
+  white-space: nowrap;
   background: var(--surface-card);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-xs);
   cursor: pointer;
   transition:
-    background-color var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard);
+    var(--transition-control),
+    transform var(--duration-instant) var(--ease-standard);
 }
 
 .btn:hover {
+  text-decoration: none;
   background: var(--surface-hover);
 }
 
@@ -170,10 +223,11 @@ samp {
 .btn-primary {
   color: var(--text-on-accent);
   background: var(--action-primary);
-  border-color: var(--action-primary);
+  border-color: transparent;
 }
 
 .btn-primary:hover {
+  color: var(--text-on-accent);
   background: var(--action-primary-hover);
 }
 
@@ -182,16 +236,29 @@ samp {
 }
 
 .btn-ghost {
+  color: var(--text-body);
   background: transparent;
   border-color: transparent;
   box-shadow: none;
 }
 
+.btn-ghost:hover {
+  color: var(--text-strong);
+}
+
 .btn-small {
-  min-height: 28px;
-  padding: 0 var(--space-2);
-  gap: var(--space-1);
-  font: var(--type-label);
+  gap: 6px;
+  min-height: var(--control-height-sm);
+  padding: 0 var(--control-pad-x-sm);
+  font-size: var(--text-xs);
+  border-radius: var(--radius-sm);
+}
+
+/* IconButton системы: квадрат без подписи, смысл — в visually-hidden тексте. */
+.icon-btn {
+  width: var(--control-height-md);
+  padding: 0;
+  color: var(--text-muted);
 }
 
 .btn-small .icon {
@@ -215,19 +282,20 @@ samp {
   padding: 3px;
   background: var(--surface-sunken);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
 }
 
 .segmented label {
   position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
+  min-height: var(--control-height-sm);
   padding: 0 var(--space-3);
   font: var(--type-ui);
   color: var(--text-muted);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   cursor: pointer;
+  transition: var(--transition-control);
 }
 
 .segmented label:hover {
@@ -264,14 +332,17 @@ samp {
 .chips label {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  padding: 0 var(--space-3);
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 10px;
   font: var(--type-ui);
-  color: var(--text-body);
-  background: var(--surface-card);
-  border: 1px solid var(--border-default);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
   cursor: pointer;
+  transition: var(--transition-control);
 }
 
 .chips label:hover {
@@ -285,9 +356,9 @@ samp {
 }
 
 .chips label:has(input:checked) {
-  color: var(--text-link);
+  color: var(--text-accent);
   background: var(--surface-accent-soft);
-  border-color: var(--border-accent);
+  border-color: var(--accent-300);
 }
 
 .chips label:has(input:focus-visible) {
@@ -300,11 +371,14 @@ samp {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 24px;
+  min-height: 22px;
   padding: 0 var(--space-2);
   font: var(--type-label);
+  letter-spacing: var(--tracking-snug);
   color: var(--text-muted);
+  white-space: nowrap;
   background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
 }
 
@@ -319,18 +393,22 @@ samp {
 .badge-success {
   color: var(--text-success);
   background: var(--surface-success);
+  border-color: transparent;
 }
 
 .badge-danger {
   color: var(--text-danger);
   background: var(--surface-danger);
+  border-color: transparent;
 }
 
 /* Счётчик символов в шапке карточки ввода. */
 .count-badge {
-  padding: 2px var(--space-2);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 var(--space-2);
+  font: var(--type-code-sm);
   color: var(--text-muted);
   background: var(--surface-sunken);
   border: 1px solid var(--border-subtle);
@@ -341,32 +419,55 @@ samp {
 
 .code {
   margin: 0;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) 14px;
   font: var(--type-code);
   color: var(--code-fg);
   background: var(--surface-code);
-  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   overflow: auto;
   white-space: pre;
 }
 
-textarea.input {
+/* Input и Textarea системы. Граница — --border-control: она опознаёт контрол (WCAG 1.4.11). */
+.input {
   display: block;
   width: 100%;
-  min-height: 320px;
-  padding: var(--space-3);
+  min-height: var(--control-height-md);
+  padding: 0 10px;
   font: var(--type-code);
   color: var(--text-strong);
   background: var(--surface-card);
   border: 1px solid var(--border-control);
   border-radius: var(--radius-md);
+  transition: var(--transition-control);
+}
+
+.input-lg {
+  min-height: var(--control-height-lg);
+}
+
+textarea.input {
+  min-height: 320px;
+  padding: 10px var(--space-3);
   resize: vertical;
 }
 
-textarea.input:focus-visible {
-  border-color: var(--focus-ring);
+.input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.input:focus-visible {
+  border-color: var(--border-accent);
   border-radius: var(--radius-md);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--border-danger);
+}
+
+.input[aria-invalid='true']:focus-visible {
+  box-shadow: var(--ring-danger);
 }
 
 .notice {
@@ -425,11 +526,35 @@ textarea.input:focus-visible {
   margin-bottom: var(--space-3);
 }
 
+/* Checkbox системы: 16 px, галочка — фоном, цвет штриха — под текущий акцент. */
 .check {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 10px;
   min-height: var(--target-min);
   font: var(--type-ui);
   cursor: pointer;
+}
+
+.check input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  background: var(--surface-card) center / 10px no-repeat;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-xs);
+  appearance: none;
+  cursor: pointer;
+  transition: var(--transition-control);
+}
+
+.check input:checked {
+  background-color: var(--action-primary);
+  background-image: var(--check-glyph);
+  border-color: var(--action-primary);
+}
+
+.check input:focus-visible {
+  border-radius: var(--radius-xs);
 }

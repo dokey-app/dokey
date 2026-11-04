@@ -1,0 +1,27 @@
+---
+// Вордмарк набором: логотипа в системе нет. Manrope 800, трекинг −0.03em, вторая часть — акцентом.
+const { class: className } = Astro.props;
+---
+
+<a class:list={['brand', className]} href="/"
+  ><span class="brand-do">Do</span><span class="brand-key">Key</span></a
+>
+
+<style>
+  .brand {
+    font: 800 var(--text-xl) / 1 var(--font-sans);
+    letter-spacing: -0.03em;
+  }
+
+  .brand:hover {
+    text-decoration: none;
+  }
+
+  .brand-do {
+    color: var(--text-strong);
+  }
+
+  .brand-key {
+    color: var(--text-link);
+  }
+</style>

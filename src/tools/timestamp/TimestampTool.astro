@@ -17,7 +17,7 @@ const example = rows(parsed.ms, false, null);
     <div class="card-body">
       <input
         id="ts-input"
-        class="line"
+        class="input input-lg"
         type="text"
         inputmode="text"
         data-input
@@ -79,19 +79,6 @@ const example = rows(parsed.ms, false, null);
 </script>
 
 <style>
-  .line {
-    display: block;
-    width: 100%;
-    min-height: var(--control-height-lg, 40px);
-    padding: 0 var(--space-4);
-    font: var(--type-code);
-    font-size: var(--text-base);
-    color: var(--text-strong);
-    background: var(--surface-card);
-    border: 1px solid var(--border-control);
-    border-radius: var(--radius-md);
-  }
-
   .controls {
     display: flex;
     flex-wrap: wrap;

@@ -1,11 +1,12 @@
 import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { sitemapPaths, sitemapXml } from '../../src/registry/sitemap.ts';
-import { tools, type Tool } from '../../src/registry/tools.ts';
+import { categories, tools, toolsByCategory, type Tool } from '../../src/registry/tools.ts';
 
 const fake: Tool = {
   id: 'jwt',
   name: 'JWT Inspector',
+  category: 'web',
   icon: 'key-round',
   title: 'Декодировать JWT',
   description: 'Разбор JWT в браузере.',
@@ -24,6 +25,15 @@ describe('реестр', () => {
     for (const tool of tools) {
       expect(existsSync(`node_modules/lucide-static/icons/${tool.icon}.svg`), tool.id).toBe(true);
     }
+  });
+
+  it('меню показывает каждый инструмент ровно один раз и не показывает пустых разделов', () => {
+    const groups = toolsByCategory();
+    expect(groups.flatMap((g) => g.tools).toSorted((a, b) => a.id.localeCompare(b.id))).toEqual(
+      tools.toSorted((a, b) => a.id.localeCompare(b.id)),
+    );
+    for (const group of groups) expect(group.tools.length).toBeGreaterThan(0);
+    expect(categories).toHaveLength(10);
   });
 
   it('H1 (продуктовое имя) — до трёх слов', () => {

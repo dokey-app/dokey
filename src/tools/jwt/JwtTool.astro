@@ -102,7 +102,7 @@ const now = Math.floor(Date.now() / 1000);
           <div class="key-row">
             <input
               id="jwt-key"
-              class="key masked"
+              class="input key masked"
               type="text"
               data-key
               autocomplete="off"
@@ -231,13 +231,6 @@ const now = Math.floor(Date.now() / 1000);
   .key {
     flex: 1;
     min-width: 0;
-    min-height: var(--control-height-md);
-    padding: 0 var(--space-3);
-    font: var(--type-code);
-    color: var(--text-strong);
-    background: var(--surface-card);
-    border: 1px solid var(--border-control);
-    border-radius: var(--radius-md);
   }
 
   /* Маска без type="password": менеджер паролей не предлагает сохранить ключ подписи. */
