@@ -1,6 +1,7 @@
 import { alertNow, announce } from './status.ts';
 
 const COPIED_MS = 1200;
+const NOTHING = 'Копировать нечего: результата нет';
 const DENIED = 'Браузер не дал доступ к буферу обмена. Выделите результат и скопируйте: Ctrl + C';
 
 /**
@@ -22,6 +23,11 @@ export async function copyText(button: HTMLButtonElement, text: string): Promise
 
 /** Запись в буфер без смены подписи: true — буфер принял текст, отказ уже объяснён. */
 export async function writeClipboard(text: string): Promise<boolean> {
+  // Пустая запись стёрла бы буфер, а кнопка сказала бы «Скопировано».
+  if (text === '') {
+    alertNow(NOTHING);
+    return false;
+  }
   try {
     await navigator.clipboard.writeText(text);
     return true;

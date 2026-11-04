@@ -1,0 +1,89 @@
+---
+import Icon from '../../ui/Icon.astro';
+
+const cards = [
+  { id: 'of', title: 'Процент от числа', a: 'Процент', b: 'От числа', unit: '' },
+  { id: 'share', title: 'Доля в процентах', a: 'Часть', b: 'От целого', unit: ' %' },
+  { id: 'change', title: 'Изменение в процентах', a: 'Было', b: 'Стало', unit: ' %' },
+];
+---
+
+<div class="calcs" data-percent-tool>
+  {
+    cards.map((card, index) => (
+      <section class="card" data-calc={card.id} data-unit={card.unit}>
+        <div class="card-head">
+          <h2 class="card-title">{card.title}</h2>
+          <button
+            type="button"
+            class="btn btn-small"
+            data-copy
+            aria-label={`Скопировать: ${card.title}`}
+          >
+            <Icon name="copy" />
+            <span class="btn-text">Скопировать</span>
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div>
+              <label class="field-label" for={`pct-${card.id}-a`}>
+                {card.a}
+              </label>
+              <input
+                id={`pct-${card.id}-a`}
+                class="input"
+                inputmode="decimal"
+                data-a
+                autocomplete="off"
+                autofocus={index === 0}
+              />
+            </div>
+            <div>
+              <label class="field-label" for={`pct-${card.id}-b`}>
+                {card.b}
+              </label>
+              <input
+                id={`pct-${card.id}-b`}
+                class="input"
+                inputmode="decimal"
+                data-b
+                autocomplete="off"
+              />
+            </div>
+          </div>
+          <p class="value" data-value>
+            —
+          </p>
+          <div class="notice notice-error" role="alert" data-error hidden />
+        </div>
+      </section>
+    ))
+  }
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .calcs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+    margin-top: var(--space-6);
+  }
+
+  .calcs > .card {
+    margin: 0;
+  }
+
+  .value {
+    margin: 0;
+    font: var(--type-code);
+    font-size: var(--text-lg);
+    color: var(--text-strong);
+    overflow-wrap: anywhere;
+  }
+</style>

@@ -472,6 +472,10 @@ textarea.input {
   box-shadow: var(--ring-danger);
 }
 
+.code:empty {
+  display: none;
+}
+
 /* Длинный текстовый результат: переносится по словам, не шире и не выше своей карточки. */
 .code-wrap {
   max-height: 640px;

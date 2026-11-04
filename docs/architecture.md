@@ -58,7 +58,8 @@ interface Tool {
 }
 ```
 
-Идентификаторы v1: `json`, `jwt`, `base64`, `url`, `unix-timestamp`, `uuid`.
+Идентификаторы — в `src/registry/tools.ts`, тест `tests/unit/registry.test.ts` сверяет их с
+политикой; состав и план — [ROADMAP.md](../ROADMAP.md), срез 11.
 
 ## Страница инструмента
 

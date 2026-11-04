@@ -1,0 +1,9 @@
+---
+import ToolPage from '../layouts/ToolPage.astro';
+import { getTool } from '../registry/tools.ts';
+import PercentageTool from '../tools/percentage/PercentageTool.astro';
+---
+
+<ToolPage tool={getTool('percentage')}>
+  <PercentageTool />
+</ToolPage>
