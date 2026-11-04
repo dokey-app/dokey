@@ -1,0 +1,112 @@
+---
+import Icon from '../../ui/Icon.astro';
+import { UNITS } from './logic.ts';
+
+const rows = [
+  ['remaining', 'Осталось'],
+  ['duration', 'Займёт'],
+  ['local', 'Закончится, местное'],
+  ['utc', 'Закончится, UTC'],
+];
+---
+
+<div class="workbench" data-eta-tool>
+  <section class="card">
+    <div class="card-head"><h2 class="card-title">Объём и скорость</h2></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div>
+          <label class="field-label" for="eta-total">Всего</label>
+          <input
+            id="eta-total"
+            class="input"
+            inputmode="decimal"
+            value="1000"
+            data-total
+            autocomplete="off"
+            autofocus
+          />
+        </div>
+        <div>
+          <label class="field-label" for="eta-done">Готово</label>
+          <input
+            id="eta-done"
+            class="input"
+            inputmode="decimal"
+            value="0"
+            data-done
+            autocomplete="off"
+          />
+        </div>
+        <div>
+          <label class="field-label" for="eta-amount">Скорость</label>
+          <input
+            id="eta-amount"
+            class="input"
+            inputmode="decimal"
+            value="10"
+            data-amount
+            autocomplete="off"
+          />
+        </div>
+      </div>
+      <fieldset class="segmented" data-units>
+        <legend class="visually-hidden">Скорость — за какое время</legend>
+        {
+          UNITS.map((unit) => (
+            <label>
+              <input type="radio" name="eta-unit" value={unit.ms} checked={unit.id === 'minute'} />
+              {unit.name}
+            </label>
+          ))
+        }
+      </fieldset>
+      <label class="field-label start" for="eta-start">Начало, местное время</label>
+      <input
+        id="eta-start"
+        class="input"
+        type="datetime-local"
+        data-start
+        aria-describedby="eta-start-hint"
+      />
+      <p class="hint" id="eta-start-hint">Пустое поле — сейчас</p>
+      <div class="notice notice-error" role="alert" data-error hidden></div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Результат</h2>
+      <button type="button" class="btn btn-small" data-copy>
+        <Icon name="copy" /><span class="btn-text">Скопировать</span>
+      </button>
+    </div>
+    <div class="card-body">
+      <dl class="kv">
+        {
+          rows.map(([key, name]) => (
+            <div>
+              <dt>{name}</dt>
+              <dd data-eta={key} />
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .start {
+    margin-top: var(--space-3);
+  }
+
+  .hint {
+    margin: var(--space-1) 0 0;
+    font: var(--type-caption);
+    color: var(--text-muted);
+  }
+</style>

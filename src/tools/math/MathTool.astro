@@ -1,0 +1,37 @@
+---
+import Icon from '../../ui/Icon.astro';
+---
+
+<div class="workbench" data-math-tool>
+  <section class="card">
+    <div class="card-head"><label class="card-title" for="math-input">Выражение</label></div>
+    <div class="card-body">
+      <input
+        id="math-input"
+        class="input input-lg"
+        type="text"
+        inputmode="text"
+        data-input
+        spellcheck="false"
+        autocomplete="off"
+        autocapitalize="off"
+        placeholder="2 ^ 10 + sqrt(16)"
+        autofocus
+      />
+      <div class="notice notice-error" role="alert" data-error hidden></div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title" data-label>Пример</h2>
+      <button type="button" class="btn btn-small" data-copy>
+        <Icon name="copy" /><span class="btn-text">Скопировать</span>
+      </button>
+    </div>
+    <div class="card-body"><pre class="code code-wrap" tabindex="0" data-output>1028</pre></div>
+  </section>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
