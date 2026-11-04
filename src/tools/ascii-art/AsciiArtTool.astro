@@ -1,0 +1,57 @@
+---
+import Icon from '../../ui/Icon.astro';
+import { FONT_NAMES } from './logic.ts';
+---
+
+<div class="workbench" data-ascii-tool>
+  <section class="card">
+    <div class="card-head"><label class="card-title" for="ascii-input">Текст</label></div>
+    <div class="card-body">
+      <textarea
+        id="ascii-input"
+        class="input short"
+        data-input
+        spellcheck="false"
+        maxlength="200"
+        placeholder="DoKey"
+        autofocus></textarea>
+      <fieldset class="segmented fonts" data-fonts>
+        <legend class="visually-hidden">Шрифт</legend>
+        {
+          FONT_NAMES.map((name, index) => (
+            <label>
+              <input type="radio" name="ascii-font" value={name} checked={index === 0} />
+              {name}
+            </label>
+          ))
+        }
+      </fieldset>
+      <div class="notice notice-warning" data-warning hidden>
+        Шрифты рисуют только латиницу, цифры и знаки ASCII — остальное пропущено
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title" data-label>Пример</h2>
+      <button type="button" class="btn btn-small" data-copy>
+        <Icon name="copy" /><span class="btn-text">Скопировать</span>
+      </button>
+    </div>
+    <div class="card-body"><pre class="code" tabindex="0" data-output></pre></div>
+  </section>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .short {
+    min-height: 120px;
+  }
+
+  .fonts {
+    margin-top: var(--space-3);
+  }
+</style>

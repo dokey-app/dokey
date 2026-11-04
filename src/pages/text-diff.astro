@@ -1,0 +1,9 @@
+---
+import ToolPage from '../layouts/ToolPage.astro';
+import { getTool } from '../registry/tools.ts';
+import TextDiffTool from '../tools/text-diff/TextDiffTool.astro';
+---
+
+<ToolPage tool={getTool('text-diff')}>
+  <TextDiffTool />
+</ToolPage>

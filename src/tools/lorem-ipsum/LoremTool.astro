@@ -1,0 +1,96 @@
+---
+import Icon from '../../ui/Icon.astro';
+---
+
+<div class="workbench" data-lorem-tool>
+  <section class="card">
+    <div class="card-head"><h2 class="card-title">Настройки</h2></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div>
+          <label class="field-label" for="lorem-paragraphs">Абзацы</label>
+          <input
+            id="lorem-paragraphs"
+            class="input"
+            inputmode="numeric"
+            value="3"
+            data-paragraphs
+            autocomplete="off"
+          />
+        </div>
+        <div>
+          <label class="field-label" for="lorem-s-min">Предложений от</label>
+          <input
+            id="lorem-s-min"
+            class="input"
+            inputmode="numeric"
+            value="3"
+            data-s-min
+            autocomplete="off"
+          />
+        </div>
+        <div>
+          <label class="field-label" for="lorem-s-max">Предложений до</label>
+          <input
+            id="lorem-s-max"
+            class="input"
+            inputmode="numeric"
+            value="6"
+            data-s-max
+            autocomplete="off"
+          />
+        </div>
+        <div>
+          <label class="field-label" for="lorem-w-min">Слов от</label>
+          <input
+            id="lorem-w-min"
+            class="input"
+            inputmode="numeric"
+            value="8"
+            data-w-min
+            autocomplete="off"
+          />
+        </div>
+        <div>
+          <label class="field-label" for="lorem-w-max">Слов до</label>
+          <input
+            id="lorem-w-max"
+            class="input"
+            inputmode="numeric"
+            value="14"
+            data-w-max
+            autocomplete="off"
+          />
+        </div>
+      </div>
+      <div class="actions">
+        <label class="check"><input type="checkbox" data-start checked />Начать с Lorem ipsum</label
+        >
+        <label class="check"><input type="checkbox" data-html />Абзацы в тегах p</label>
+      </div>
+      <button type="button" class="btn btn-primary again" data-generate autofocus>
+        <Icon name="refresh-cw" /><span class="btn-text">Сгенерировать</span>
+      </button>
+      <div class="notice notice-error" role="alert" data-error hidden></div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Текст</h2>
+      <button type="button" class="btn btn-small" data-copy>
+        <Icon name="copy" /><span class="btn-text">Скопировать</span>
+      </button>
+    </div>
+    <div class="card-body"><pre class="code code-wrap" tabindex="0" data-output></pre></div>
+  </section>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .again {
+    margin-top: var(--space-3);
+  }
+</style>

@@ -1,0 +1,98 @@
+---
+import Icon from '../../ui/Icon.astro';
+---
+
+<div data-diff-tool>
+  <div class="workbench sources">
+    <section class="card">
+      <div class="card-head"><label class="card-title" for="diff-before">Было</label></div>
+      <div class="card-body">
+        <textarea
+          id="diff-before"
+          class="input"
+          data-before
+          spellcheck="false"
+          placeholder="Исходный текст"
+          autofocus></textarea>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head"><label class="card-title" for="diff-after">Стало</label></div>
+      <div class="card-body">
+        <textarea
+          id="diff-after"
+          class="input"
+          data-after
+          spellcheck="false"
+          placeholder="Изменённый текст"></textarea>
+      </div>
+    </section>
+  </div>
+  <section class="card result">
+    <div class="card-head">
+      <h2 class="card-title">Отличия</h2>
+      <div class="actions">
+        <span class="count-badge" data-summary>+0 −0</span>
+        <button type="button" class="btn btn-small" data-copy>
+          <Icon name="copy" /><span class="btn-text">Скопировать</span>
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="notice notice-error" role="alert" data-error hidden></div>
+      <p class="same" data-same hidden>Тексты совпадают</p>
+      <div class="lines" tabindex="0" role="group" aria-label="Отличия" data-lines></div>
+    </div>
+  </section>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .sources textarea {
+    min-height: 240px;
+  }
+
+  .result {
+    margin-top: var(--space-4);
+  }
+
+  .same {
+    margin: 0;
+    font: var(--type-ui);
+    color: var(--text-muted);
+  }
+
+  .lines {
+    max-height: 640px;
+    overflow: auto;
+    font: var(--type-code);
+    border-radius: var(--radius-md);
+  }
+
+  .lines:empty {
+    display: none;
+  }
+
+  /* Строки создаёт ui.ts. Знак, а не только цвет: изменение читается и без цвета. */
+  .lines :global(.diff-line) {
+    display: grid;
+    grid-template-columns: 2ch minmax(0, 1fr);
+    gap: var(--space-1);
+    padding: 0 var(--space-2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .lines :global(.diff-add) {
+    color: var(--diff-add-fg);
+    background: var(--diff-add-bg);
+  }
+
+  .lines :global(.diff-del) {
+    color: var(--diff-del-fg);
+    background: var(--diff-del-bg);
+  }
+</style>

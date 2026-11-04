@@ -12,3 +12,7 @@ Third-party components bundled into the site:
   (via @fontsource-variable/jetbrains-mono).
 - Lucide icons, (c) Lucide Contributors — ISC License (via lucide-static;
   icons are inlined into HTML at build time).
+- FIGlet font driver, (c) Patrick Gillespie — MIT License (via figlet; loaded by
+  the ASCII art tool). FIGlet fonts retain their authors' notices.
+- Emoji names and groups, (c) Miles Johnson — MIT License (via emojibase-data),
+  based on Unicode CLDR data, (c) Unicode, Inc. — Unicode License v3.

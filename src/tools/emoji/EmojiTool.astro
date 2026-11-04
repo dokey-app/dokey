@@ -1,0 +1,72 @@
+---
+
+---
+
+<div data-emoji-tool>
+  <section class="card">
+    <div class="card-head">
+      <label class="card-title" for="emoji-search">Поиск</label>
+      <span class="count-badge" data-count></span>
+    </div>
+    <div class="card-body">
+      <input
+        id="emoji-search"
+        class="input"
+        type="search"
+        data-search
+        spellcheck="false"
+        autocomplete="off"
+        placeholder="кот, сердце, флаг"
+        autofocus
+      />
+      <p class="picked" data-picked>Нажмите на эмодзи, чтобы скопировать</p>
+      <div data-groups></div>
+      <p class="picked" data-empty hidden>Ничего не найдено</p>
+    </div>
+  </section>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .picked {
+    position: sticky;
+    top: var(--topbar-height);
+    z-index: 1;
+    margin: var(--space-3) 0 0;
+    padding: var(--space-1) 0;
+    font: var(--type-ui);
+    color: var(--text-muted);
+    background: var(--surface-card);
+  }
+
+  /* Разделы и кнопки создаёт ui.ts. */
+  [data-groups] :global(h3) {
+    margin: var(--space-4) 0 var(--space-2);
+    font: var(--type-label);
+    color: var(--text-muted);
+  }
+
+  [data-groups] :global(.emoji-grid) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 2px;
+  }
+
+  [data-groups] :global(.emoji-btn) {
+    height: 40px;
+    font-size: var(--text-xl);
+    line-height: 1;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-control);
+  }
+
+  [data-groups] :global(.emoji-btn:hover) {
+    background: var(--surface-hover);
+  }
+</style>

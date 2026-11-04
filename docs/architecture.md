@@ -73,9 +73,11 @@ interface Tool {
 
 ## Зависимости продукта
 
-Прикладных зависимостей нет: свой разборщик JSON, WebCrypto (HMAC), `TextEncoder`/`TextDecoder`,
+Логика инструментов — свой код: разборщик JSON, WebCrypto (HMAC), `TextEncoder`/`TextDecoder`,
 `URL`, `Intl`, `crypto.getRandomValues` (UUID v4/v7 и ULID — своя реализация по RFC 9562 и
-спецификации ULID). Любая новая зависимость — запись в [decisions.md](decisions.md).
+спецификации ULID). Библиотека подключается, только если без неё инструмент не сделать: данные или формат
+(`figlet`, `emojibase-data`). Такая библиотека загружается динамическим импортом и не входит в
+initial JS. Любая новая зависимость — запись в [decisions.md](decisions.md).
 
 ## Инварианты и их проверки
 

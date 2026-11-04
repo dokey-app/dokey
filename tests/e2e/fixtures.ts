@@ -28,8 +28,8 @@ export const test = base.extend({
           headers: { ...response.headers(), 'content-security-policy': CSP },
         });
       } catch (error) {
-        // Тест закончился или страница ушла по ссылке, пока грузились шрифты: запрос уже
-        // никому не нужен. Любая другая ошибка — настоящая.
+        // Страница ушла по ссылке, пока грузились шрифты: запрос уже никому не нужен.
+        // Любая другая ошибка — настоящая.
         if (!/disposed|closed/i.test(String(error))) throw error;
       }
     });
@@ -40,6 +40,7 @@ export const test = base.extend({
       });
     });
     await use(page);
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
   },
 });
 

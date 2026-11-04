@@ -1,0 +1,34 @@
+---
+import Icon from '../../ui/Icon.astro';
+---
+
+<div class="workbench" data-numeronym-tool>
+  <section class="card">
+    <div class="card-head"><label class="card-title" for="num-input">Слова</label></div>
+    <div class="card-body">
+      <input
+        id="num-input"
+        class="input input-lg"
+        type="text"
+        data-input
+        spellcheck="false"
+        autocomplete="off"
+        placeholder="internationalization"
+        autofocus
+      />
+    </div>
+  </section>
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title" data-label>Пример</h2>
+      <button type="button" class="btn btn-small" data-copy>
+        <Icon name="copy" /><span class="btn-text">Скопировать</span>
+      </button>
+    </div>
+    <div class="card-body"><pre class="code code-wrap" tabindex="0" data-output>i18n</pre></div>
+  </section>
+</div>
+
+<script>
+  import './ui.ts';
+</script>

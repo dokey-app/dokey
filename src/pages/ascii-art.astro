@@ -1,0 +1,9 @@
+---
+import ToolPage from '../layouts/ToolPage.astro';
+import { getTool } from '../registry/tools.ts';
+import AsciiArtTool from '../tools/ascii-art/AsciiArtTool.astro';
+---
+
+<ToolPage tool={getTool('ascii-art')}>
+  <AsciiArtTool />
+</ToolPage>

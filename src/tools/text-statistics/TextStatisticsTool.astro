@@ -1,0 +1,57 @@
+---
+import Icon from '../../ui/Icon.astro';
+
+const rows = [
+  ['characters', 'Символы'],
+  ['codePoints', 'Кодовые точки'],
+  ['words', 'Слова'],
+  ['lines', 'Строки'],
+  ['paragraphs', 'Абзацы'],
+  ['bytes', 'Байты UTF-8'],
+];
+---
+
+<div class="workbench" data-stats-tool>
+  <section class="card">
+    <div class="card-head"><label class="card-title" for="stats-input">Текст</label></div>
+    <div class="card-body">
+      <textarea
+        id="stats-input"
+        class="input"
+        data-input
+        spellcheck="false"
+        placeholder="Вставьте текст"
+        autofocus></textarea>
+      <div class="actions clear-row">
+        <button type="button" class="btn btn-small btn-ghost" data-clear>
+          <Icon name="eraser" /><span class="btn-text">Очистить</span>
+        </button>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2 class="card-title">Результат</h2></div>
+    <div class="card-body">
+      <dl class="kv">
+        {
+          rows.map(([key, name]) => (
+            <div>
+              <dt>{name}</dt>
+              <dd data-stat={key}>0</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+</div>
+
+<script>
+  import './ui.ts';
+</script>
+
+<style>
+  .clear-row {
+    margin-top: var(--space-3);
+  }
+</style>
