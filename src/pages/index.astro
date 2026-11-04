@@ -1,7 +1,7 @@
 ---
 import Detector from '../detect/Detector.astro';
 import Base from '../layouts/Base.astro';
-import { tools } from '../registry/tools.ts';
+import { getCategory, tools } from '../registry/tools.ts';
 import Icon from '../ui/Icon.astro';
 ---
 
@@ -26,6 +26,7 @@ import Icon from '../ui/Icon.astro';
               </span>
               <span class="tool-name">{tool.name}</span>
               <span class="tool-desc">{tool.title}</span>
+              <span class="tool-category">{getCategory(tool.category)}</span>
             </a>
           </li>
         ))
@@ -56,7 +57,6 @@ import Icon from '../ui/Icon.astro';
   .tool-card {
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
     height: 100%;
     padding: var(--space-4);
     color: inherit;
@@ -73,7 +73,8 @@ import Icon from '../ui/Icon.astro';
 
   .tool-card:hover {
     transform: translateY(-1px);
-    border-color: var(--border-accent);
+    text-decoration: none;
+    border-color: var(--accent-300);
     box-shadow: var(--shadow-md);
   }
 
@@ -87,8 +88,8 @@ import Icon from '../ui/Icon.astro';
     justify-content: center;
     width: 36px;
     height: 36px;
-    margin-bottom: var(--space-2);
-    color: var(--text-link);
+    margin-bottom: 10px;
+    color: var(--text-accent);
     background: var(--surface-accent-soft);
     border-radius: var(--radius-md);
   }
@@ -100,12 +101,24 @@ import Icon from '../ui/Icon.astro';
   }
 
   .tool-name {
-    font-weight: 700;
+    font: var(--type-ui);
+    font-size: var(--text-base);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-snug);
     color: var(--text-strong);
   }
 
   .tool-desc {
-    font: var(--type-ui);
+    margin-top: var(--space-1);
+    font: var(--type-caption);
+    line-height: 1.45;
+    color: var(--text-muted);
+  }
+
+  .tool-category {
+    margin-top: auto;
+    padding-top: 14px;
+    font: var(--type-caption);
     color: var(--text-muted);
   }
 </style>

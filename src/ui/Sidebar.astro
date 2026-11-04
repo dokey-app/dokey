@@ -1,0 +1,299 @@
+---
+// Левое меню: состав и разделы — как у it-tools, форма — как у Notion: плоские строки без
+// акцента, активная — нейтральной подложкой, шапка и низ закреплены, середина прокручивается.
+// На узком экране это выдвижной popover: открывается без JS, поиск работает только с JS.
+import { toolsByCategory } from '../registry/tools.ts';
+import Icon from './Icon.astro';
+import Wordmark from './Wordmark.astro';
+
+// build.format = 'file': на сборке путь страницы — /jwt.html, ссылки — /jwt.
+const path = Astro.url.pathname.replace(/(index)?\.html$/, '');
+const current = (href: string) => (path === href ? 'page' : undefined);
+---
+
+<nav id="sidebar" class="sidebar" aria-label="Навигация" popover data-nav>
+  <div class="head">
+    <Wordmark />
+    <button
+      class="btn btn-ghost icon-btn close"
+      type="button"
+      popovertarget="sidebar"
+      popovertargetaction="hide"
+    >
+      <Icon name="x" /><span class="visually-hidden">Закрыть меню</span>
+    </button>
+  </div>
+  <label class="search">
+    <Icon name="search" />
+    <span class="visually-hidden">Поиск инструмента</span>
+    <input
+      type="search"
+      placeholder="Поиск"
+      data-nav-search
+      autocomplete="off"
+      spellcheck="false"
+      autocapitalize="off"
+    />
+    <kbd aria-hidden="true">Ctrl K</kbd>
+  </label>
+  <div class="scroll">
+    <ul class="items" data-nav-home>
+      <li>
+        <a class="item" href="/" aria-current={current('/')}>
+          <Icon name="scan-search" /><span>Автоопределение</span>
+        </a>
+      </li>
+    </ul>
+    {
+      toolsByCategory().map((category) => (
+        <details class="group" open data-nav-group>
+          <summary>
+            <span>{category.name}</span>
+            <Icon name="chevron-down" size={14} />
+          </summary>
+          <ul class="items">
+            {category.tools.map((tool) => (
+              <li data-nav-item={`${tool.name} ${tool.title}`.toLowerCase()}>
+                <a class="item" href={`/${tool.id}`} aria-current={current(`/${tool.id}`)}>
+                  <Icon name={tool.icon} />
+                  <span>{tool.name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ))
+    }
+    <p class="empty" data-nav-empty hidden>Ничего не найдено</p>
+  </div>
+  <ul class="items foot">
+    <li>
+      <a class="item" href="/how-to-verify" aria-current={current('/how-to-verify')}>
+        <Icon name="shield-check" /><span>Как это проверить</span>
+      </a>
+    </li>
+    <li>
+      <a class="item" href="https://github.com/dokey-app/dokey">
+        <Icon name="code" /><span>Исходный код</span>
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<script>
+  import './sidebar.ts';
+</script>
+
+<style>
+  /* Подложки строк — прозрачность от --text-strong: --surface-hover в светлой теме совпадает
+     с фоном меню (оба gray-100), и наведение было бы не видно. */
+  .sidebar {
+    --item-hover: color-mix(in srgb, var(--text-strong) 5%, transparent);
+    --item-active: color-mix(in srgb, var(--text-strong) 10%, transparent);
+
+    position: sticky;
+    top: 0;
+    inset-inline: auto;
+    display: flex;
+    flex-direction: column;
+    width: auto;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    color: var(--text-body);
+    background: var(--surface-sunken);
+    border: 0;
+    border-right: 1px solid var(--border-subtle);
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--topbar-height);
+    padding: 0 var(--space-4);
+  }
+
+  .close {
+    display: none;
+  }
+
+  .search {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 30px;
+    margin: 0 var(--space-2) var(--space-2);
+    padding: 0 var(--space-2);
+    color: var(--text-muted);
+    border-radius: var(--radius-sm);
+    cursor: text;
+    transition: var(--transition-control);
+  }
+
+  .search:hover {
+    background: var(--item-hover);
+  }
+
+  .search:focus-within {
+    background: var(--surface-card);
+    box-shadow: var(--ring-focus);
+  }
+
+  .search input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    font: var(--type-ui);
+    color: var(--text-strong);
+    background: transparent;
+    border: 0;
+    appearance: none;
+  }
+
+  .search input:focus-visible {
+    box-shadow: none;
+  }
+
+  .search input::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+  }
+
+  .scroll {
+    flex: 1;
+    min-height: 0;
+    padding: 0 var(--space-2) var(--space-2);
+    overflow-y: auto;
+  }
+
+  .items {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 30px;
+    padding: 0 var(--space-2);
+    font: var(--type-ui);
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-control);
+  }
+
+  .item:hover {
+    color: var(--text-strong);
+    text-decoration: none;
+    background: var(--item-hover);
+  }
+
+  .item[aria-current='page'] {
+    color: var(--text-strong);
+    background: var(--item-active);
+  }
+
+  .item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .group {
+    margin-top: var(--space-4);
+  }
+
+  .group summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--target-min);
+    margin-bottom: 2px;
+    padding: 0 var(--space-2);
+    font: var(--type-caption);
+    font-weight: var(--weight-medium);
+    color: var(--text-muted);
+    list-style: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-control);
+  }
+
+  .group summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .group summary:hover {
+    color: var(--text-strong);
+    background: var(--item-hover);
+  }
+
+  /* Как в Notion, шеврон показывается по наведению; у свёрнутого раздела и на таче — всегда. */
+  .group summary :global(.icon) {
+    opacity: 0;
+    transition:
+      opacity var(--duration-fast) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-standard);
+  }
+
+  .group summary:hover :global(.icon),
+  .group summary:focus-visible :global(.icon),
+  .group:not([open]) summary :global(.icon) {
+    opacity: 1;
+  }
+
+  .group:not([open]) summary :global(.icon) {
+    transform: rotate(-90deg);
+  }
+
+  @media (hover: none) {
+    .group summary :global(.icon) {
+      opacity: 1;
+    }
+  }
+
+  .empty {
+    margin: var(--space-4) var(--space-2);
+    font: var(--type-caption);
+    color: var(--text-muted);
+  }
+
+  .foot {
+    padding: var(--space-2);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* Узкий экран: меню поверх контента, Ctrl K здесь не нажать. */
+  @media (max-width: 899px) {
+    .sidebar:not(:popover-open) {
+      display: none;
+    }
+
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: min(300px, 85vw);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .sidebar::backdrop {
+      background: var(--surface-overlay);
+    }
+
+    .close {
+      display: inline-flex;
+    }
+
+    .search kbd {
+      display: none;
+    }
+  }
+</style>

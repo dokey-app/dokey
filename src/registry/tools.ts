@@ -7,6 +7,22 @@ export interface Faq {
   a: string;
 }
 
+/** Разделы меню и каталога — состав и порядок как у it-tools (ROADMAP, срез 11). */
+export const categories = [
+  { id: 'crypto', name: 'Криптография' },
+  { id: 'converter', name: 'Конвертеры' },
+  { id: 'web', name: 'Веб' },
+  { id: 'media', name: 'Изображения и видео' },
+  { id: 'development', name: 'Разработка' },
+  { id: 'network', name: 'Сеть' },
+  { id: 'math', name: 'Математика' },
+  { id: 'measurement', name: 'Измерения' },
+  { id: 'text', name: 'Текст' },
+  { id: 'data', name: 'Данные' },
+] as const;
+
+export type CategoryId = (typeof categories)[number]['id'];
+
 export interface Tool {
   /** kebab-case, совпадает с сегментом маршрута: `/jwt`. */
   id: string;
@@ -14,6 +30,8 @@ export interface Tool {
   name: string;
   /** <title> с поисковой формулировкой и подпись в каталоге. */
   title: string;
+  /** Раздел меню и каталога. */
+  category: CategoryId;
   /** Иконка Lucide из словаря дизайн-системы: braces, key-round, binary, link, clock, fingerprint. */
   icon: string;
   /** meta description и вводный абзац, ≤ 240 знаков. */
@@ -28,6 +46,7 @@ export const tools: readonly Tool[] = [
   {
     id: 'json',
     name: 'JSON Workbench',
+    category: 'development',
     icon: 'braces',
     title: 'Форматирование и проверка JSON',
     description:
@@ -55,6 +74,7 @@ export const tools: readonly Tool[] = [
   {
     id: 'jwt',
     name: 'JWT Inspector',
+    category: 'web',
     icon: 'key-round',
     title: 'Декодировать JWT и проверить подпись',
     description:
@@ -82,6 +102,7 @@ export const tools: readonly Tool[] = [
   {
     id: 'base64',
     name: 'Base64 Encoder/Decoder',
+    category: 'converter',
     icon: 'binary',
     title: 'Base64: кодировать и декодировать текст и файлы',
     description:
@@ -109,6 +130,7 @@ export const tools: readonly Tool[] = [
   {
     id: 'url',
     name: 'URL Encoder/Decoder',
+    category: 'web',
     icon: 'link',
     title: 'Декодировать и разобрать URL, кодировать текст для URL',
     description:
@@ -136,6 +158,7 @@ export const tools: readonly Tool[] = [
   {
     id: 'unix-timestamp',
     name: 'Unix Timestamp Converter',
+    category: 'converter',
     icon: 'clock',
     title: 'Конвертер Unix timestamp в дату и обратно',
     description:
@@ -159,6 +182,7 @@ export const tools: readonly Tool[] = [
   {
     id: 'uuid',
     name: 'UUID/ULID Generator',
+    category: 'crypto',
     icon: 'fingerprint',
     title: 'Генератор UUID v4, v7 и ULID, проверка UUID',
     description:
@@ -184,6 +208,20 @@ export const tools: readonly Tool[] = [
     sensitiveInput: false,
   },
 ];
+
+/** Разделы с инструментами, в порядке it-tools; пустой раздел в меню не попадает. */
+export function toolsByCategory(): { id: CategoryId; name: string; tools: Tool[] }[] {
+  return categories
+    .map((category) => ({
+      ...category,
+      tools: tools.filter((tool) => tool.category === category.id),
+    }))
+    .filter((category) => category.tools.length > 0);
+}
+
+export function getCategory(id: CategoryId): string {
+  return categories.find((category) => category.id === id)!.name;
+}
 
 export function getTool(id: string): Tool {
   const tool = tools.find((t) => t.id === id);

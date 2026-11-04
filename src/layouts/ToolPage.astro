@@ -1,7 +1,7 @@
 ---
 // Страница инструмента = лендинг: H1 — продуктовое имя (до трёх слов, дизайн-система),
 // поисковая формулировка — в <title> и в первой фразе описания. FAQ виден без JS.
-import type { Tool } from '../registry/tools.ts';
+import { getCategory, type Tool } from '../registry/tools.ts';
 import Base from './Base.astro';
 
 interface Props {
@@ -12,8 +12,10 @@ const { tool } = Astro.props;
 ---
 
 <Base title={`${tool.title} — DoKey`} description={tool.description}>
-  <nav class="crumbs" aria-label="Навигация">
+  <nav class="crumbs" aria-label="Путь" slot="crumbs">
     <a href="/">Инструменты</a>
+    <span aria-hidden="true">/</span>
+    <span>{getCategory(tool.category)}</span>
     <span aria-hidden="true">/</span>
     <span aria-current="page">{tool.name}</span>
   </nav>
@@ -39,19 +41,17 @@ const { tool } = Astro.props;
   .crumbs {
     display: flex;
     gap: var(--space-2);
-    margin-bottom: var(--space-4);
     font: var(--type-ui);
+    font-size: var(--text-xs);
     color: var(--text-muted);
   }
 
   .crumbs a {
     color: var(--text-muted);
-    text-decoration: none;
   }
 
   .crumbs a:hover {
     color: var(--text-strong);
-    text-decoration: underline;
   }
 
   .crumbs [aria-current] {
@@ -71,7 +71,7 @@ const { tool } = Astro.props;
 
   dt {
     margin-top: var(--space-4);
-    font-weight: 600;
+    font-weight: var(--weight-semibold);
     color: var(--text-strong);
   }
 
